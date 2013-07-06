@@ -1,0 +1,24 @@
+package org.adorsys.plh.pkix.core.cmp.certrequest;
+
+public interface CertRequestMessages {
+	
+	public static final String CertRequestMessages_generate_generalCMPException="CertRequestMessages.generate.generalCMPException";
+	public static final String CertRequestMessages_generate_errorBuildingExtention="CertRequestMessages.generate.errorBuildingExtention";
+	public static final String CertRequestMessages_ui_missingRecipient = "CertRequestMessages.ui.missingRecipient";
+	public static final String CertRequestMessages_request_noCertrequestMessageInHolder = "CertRequestMessages.request.noCertrequestMessageInHolder";
+	public static final String CertRequestMessages_request_processOnlyFirstcertRequestMessage = "CertRequestMessages.request.processOnlyFirstcertRequestMessag";
+	public static final String CertRequestMessages_response_certResponseEmpty = "CertRequestMessages.response.certResponseEmpty";
+	public static final String CertRequestMessages_response_missingCertRequestId = "CertRequestMessages.response.missingCertRequestId";
+	public static final String CertRequestMessages_response_wrongCertRequestId = "CertRequestMessages.response.wrongCertRequestId";
+	public static final String CertRequestMessages_request_missingAssociatedPoP = "CertRequestMessages.response.missingAssociatedPoP";
+	public static final String CertRequestMessages_request_canNotDecryptCertificate = "CertRequestMessages.request.canNotDecryptCertificate";
+	public static final String CertRequestMessages_certificate_authorityInfoAccessExtensionNoMatchingTemplate = "CertRequestMessages.certificate.authorityInfoAccessExtensionNoMatchingTemplate";
+	public static final String CertRequestMessages_certificate_keyUsageExtensionNoMatchingTemplate = "CertRequestMessages.certificate.keyUsageExtensionNoMatchingTemplate";
+	public static final String CertRequestMessages_certificate_subjectAlternativeNameExtensionNoMatchingTemplate = "CertRequestMessages.certificate.subjectAlternativeNameExtensionNoMatchingTemplate";
+	public static final String CertRequestMessages_certificate_caExtensionNoMatchingTemplate = "CertRequestMessages.certificate.caExtensionNoMatchingTemplate";
+	public static final String CertRequestMessages_certificate_serialNumberNoMatchingTemplate = "CertRequestMessages.certificate.serialNumberNoMatchingTemplate";
+	public static final String CertRequestMessages_certificate_validityNoMatchingTemplate = "CertRequestMessages.certificate.validityNoMatchingTemplate";
+	public static final String CertRequestMessages_certificate_issuerNoMatchingTemplate = "CertRequestMessages.certificate.issuerNoMatchingTemplate";
+	public static final String CertRequestMessages_certificate_subjectNoMatchingTemplate = "CertRequestMessages.certificate.subjectNoMatchingTemplate";
+	public static final String CertRequestMessages_certificate_publicKeyNoMatchingTemplate = "CertRequestMessages.certificate.publicKeyNoMatchingTemplate";
+}

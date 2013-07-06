@@ -4,3 +4,15 @@
 *.jar
 *.war
 *.ear
+
+target/
+.settings/
+.metadata/
+.project
+.classpath
+.forge_settings
+.checkstyle
+
+*~
+*#
+
