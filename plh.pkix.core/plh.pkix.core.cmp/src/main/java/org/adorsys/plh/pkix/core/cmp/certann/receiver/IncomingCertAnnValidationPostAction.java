@@ -9,13 +9,13 @@ import org.adorsys.plh.pkix.core.utils.asn1.ASN1CertValidationResult;
 import org.adorsys.plh.pkix.core.utils.asn1.ASN1CertValidationResults;
 
 public class IncomingCertAnnValidationPostAction extends GenericAction {
-	public static final String ACCEPT_OUTCOME="accept";
+	public static final String IMPORT_OUTCOME="import";
 
 	private final BuilderChecker checker = new BuilderChecker(IncomingCertAnnValidationPostAction.class);
 	public IncomingCertAnnValidationPostAction(ActionContext actionContext) {
 		super(actionContext);
 		checker.checkNull(actionContext);
-		addProcessor(ACCEPT_OUTCOME, IncomingCertAnnImportActionProcessor.class);
+		addProcessor(IMPORT_OUTCOME, IncomingCertAnnImportActionProcessor.class);
 		addProcessor(USER_FEEDBACK_OUTCOME, IncomingCertAnnValidationUserFeedbackProcessor.class);
 
 		CMPRequest cmpRequest = actionContext.get(CMPRequest.class);
@@ -34,6 +34,6 @@ public class IncomingCertAnnValidationPostAction extends GenericAction {
 			}				
 		}
 		if(getOutcome()==null)
-			setOutcome(ACCEPT_OUTCOME);// suspect all good.
+			setOutcome(IMPORT_OUTCOME);// suspect all good.
 	}
 }

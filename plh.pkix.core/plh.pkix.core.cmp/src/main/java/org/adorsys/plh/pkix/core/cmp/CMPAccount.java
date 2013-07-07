@@ -86,11 +86,11 @@ public class CMPAccount {
 		ContactManager contactManager = actionContext.get(ContactManager.class);
 		return contactManager.getMainMessagePrivateKeyEntry();
 	}
-	public PrivateKeyEntry findMessagePrivateKeyByIssuer(X509CertificateHolder issuerCertificate) {
-		ActionContext actionContext = new ActionContext(accountContext);
-		ContactManager contactManager = actionContext.get(ContactManager.class);
-		return contactManager.findMessageEntryByIssuerCertificate(PrivateKeyEntry.class, issuerCertificate);
-	}
+//	public PrivateKeyEntry findMessagePrivateKeyByIssuer(X509CertificateHolder issuerCertificate) {
+//		ActionContext actionContext = new ActionContext(accountContext);
+//		ContactManager contactManager = actionContext.get(ContactManager.class);
+//		return contactManager.findMessageEntryByIssuerCertificate(PrivateKeyEntry.class, issuerCertificate);
+//	}
 	
 	public TrustedCertificateEntry findCaSigningCertificateByEmail(String caEmail){
 		ActionContext actionContext = new ActionContext(accountContext);
@@ -108,5 +108,11 @@ public class CMPAccount {
 		ActionContext actionContext = new ActionContext(accountContext);
 		ContactManager contactManager = actionContext.get(ContactManager.class);
 		contactManager.addContactListener(contactListener);
+	}
+	
+	public List<PrivateKeyEntry> findAllMessagePrivateKeyEntriesByPublicKey(X509CertificateHolder certificateHolder){
+		ActionContext actionContext = new ActionContext(accountContext);
+		ContactManager contactManager = actionContext.get(ContactManager.class);
+		return contactManager.findEntriesByPublicKeyInfo(PrivateKeyEntry.class, certificateHolder.getSubjectPublicKeyInfo());
 	}
 }

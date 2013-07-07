@@ -91,7 +91,7 @@ public class InMemoryCMPMessenger implements CMPMessenger {
 	}
 
 	@Override
-	public void registerMessageEndPoint(CMPMessageEndpoint endpoint,
+	public synchronized void registerMessageEndPoint(CMPMessageEndpoint endpoint,
 			PKIMessage initRequest) 
 	{
 		ProtectedPKIMessage protectedPKIMessage = new ProtectedPKIMessage(new GeneralPKIMessage(initRequest));
@@ -103,6 +103,8 @@ public class InMemoryCMPMessenger implements CMPMessenger {
 		
 		X509CertificateHolder subjectCertificate = certificates[0];
 		String publicKeyIdentifier = KeyIdUtils.createPublicKeyIdentifierAsString(subjectCertificate);
+		X500Name subjectDN = X500NameHelper.readSubjectDN(subjectCertificate);
+		System.out.println(subjectDN +":" +publicKeyIdentifier);
 		if(publicKeyIdentifier2EndPoint.containsKey(publicKeyIdentifier))
 			throw new IllegalStateException("Sender with key id exists");
 		

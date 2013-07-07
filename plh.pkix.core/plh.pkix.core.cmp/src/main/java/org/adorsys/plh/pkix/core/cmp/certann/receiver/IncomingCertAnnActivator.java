@@ -18,6 +18,7 @@ public class IncomingCertAnnActivator extends ModuleActivator {
 	@Override
 	protected void activate(ActionContext actionContext, FileWrapper accountDir) {
 		actionContext.put(IncomingCertAnnImportActionProcessor.class, new IncomingCertAnnImportActionProcessor());		
+		actionContext.put(IncomingCertAnnValidationUserFeedbackProcessor.class, new IncomingCertAnnValidationUserFeedbackProcessor());
 	}
 
 	@Override

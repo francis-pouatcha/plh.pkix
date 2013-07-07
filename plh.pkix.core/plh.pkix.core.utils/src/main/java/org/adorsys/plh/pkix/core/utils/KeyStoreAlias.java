@@ -225,7 +225,7 @@ public class KeyStoreAlias {
 		String authorityKeyIdHex = KeyIdUtils.readAuthorityKeyIdentifierAsString(certificateHolder);
 		return select(aliases, new KeyStoreAlias(null, null,authorityKeyIdHex,null,null));
 	}
-
+	
 	public static final List<KeyStoreAlias> select(Enumeration<String> aliases, 
 			KeyStoreAlias model)
 	{

@@ -7,6 +7,7 @@ import java.util.concurrent.BlockingQueue;
 
 import org.adorsys.plh.pkix.core.utils.contact.ContactListener;
 import org.adorsys.plh.pkix.core.utils.x500.X500NameHelper;
+import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.cert.X509CertificateHolder;
 
 /**
@@ -20,8 +21,8 @@ public class BlockingContactListener implements ContactListener {
 	private BlockingQueue<String> contactBlockingQueue = new ArrayBlockingQueue<String>(100);
 	private List<String> expectedEmails = new ArrayList<String>();
 
-	private BlockingQueue<String> issuedCertBlockingQueue = new ArrayBlockingQueue<String>(100);
-	private List<String> expectedIssuedCertificates = new ArrayList<String>();
+	private BlockingQueue<X500Name> issuedCertBlockingQueue = new ArrayBlockingQueue<X500Name>(100);
+	private List<X500Name> expectedIssuedCertificates = new ArrayList<X500Name>();
 	
 	@Override
 	public void contactAdded(X509CertificateHolder certHolder) {
@@ -57,16 +58,13 @@ public class BlockingContactListener implements ContactListener {
 	 * Expect a issued certificate whose ca carries the following email.
 	 * @param email
 	 */
-	public void expectIssuedCertficate(String email){
-		expectedIssuedCertificates.add(email);
+	public void expectIssuedCertficate(X500Name issuerName){
+		expectedIssuedCertificates.add(issuerName);
 	}
 	
 	@Override
 	public void issuedCertificateImported(X509CertificateHolder certHolder) {
-		List<String> issuerEmails = X500NameHelper.readIssuerEmails(certHolder);
-		for (String email : issuerEmails) {
-			issuedCertBlockingQueue.offer(email);
-		}
+		issuedCertBlockingQueue.offer(certHolder.getIssuer());
 	}
 
 
@@ -74,8 +72,8 @@ public class BlockingContactListener implements ContactListener {
 		while(true){
 			if(expectedIssuedCertificates.isEmpty()) return;
 			try {
-				String email = issuedCertBlockingQueue.take();
-				expectedIssuedCertificates.remove(email);
+				X500Name issuerName = issuedCertBlockingQueue.take();
+				expectedIssuedCertificates.remove(issuerName);
 			} catch (InterruptedException e) {
 				// noop
 			}

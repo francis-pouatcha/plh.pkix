@@ -48,9 +48,9 @@ public class RegistrationRequestSendActionProcessor implements ActionProcessor {
 					requests.setResultAndNextAction(request, null, new DERIA5String(ProcessingStatus.SUCCESS), null, null);
 				} catch(PlhUncheckedException e){
 					ErrorMessageHelper.processError(request, requests, e.getErrorMessage());
-				} catch (RuntimeException r){
-					ErrorBundle errorMessage = PlhUncheckedException.toErrorMessage(r, getClass().getName()+"#process");
-					ErrorMessageHelper.processError(request, requests, errorMessage);
+//				} catch (RuntimeException r){
+//					ErrorBundle errorMessage = PlhUncheckedException.toErrorMessage(r, getClass().getName()+"#process");
+//					ErrorMessageHelper.processError(request, requests, errorMessage);
 				} finally {
 					requests.unlock(request);
 				}

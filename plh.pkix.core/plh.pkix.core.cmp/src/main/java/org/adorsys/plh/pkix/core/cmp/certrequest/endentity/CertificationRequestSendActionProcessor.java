@@ -16,7 +16,6 @@ import org.adorsys.plh.pkix.core.utils.exception.PlhUncheckedException;
 import org.bouncycastle.asn1.DERGeneralizedTime;
 import org.bouncycastle.asn1.DERIA5String;
 import org.bouncycastle.asn1.cmp.PKIMessage;
-import org.bouncycastle.i18n.ErrorBundle;
 
 public class CertificationRequestSendActionProcessor implements ActionProcessor {
 
@@ -47,9 +46,9 @@ public class CertificationRequestSendActionProcessor implements ActionProcessor 
 					requests.setResultAndNextAction(request, null, new DERIA5String(ProcessingStatus.SUCCESS), null, null);
 				} catch(PlhUncheckedException e){
 					ErrorMessageHelper.processError(request, requests, e.getErrorMessage());
-				} catch (RuntimeException r){
-					ErrorBundle errorMessage = PlhUncheckedException.toErrorMessage(r, getClass().getName()+"#process");
-					ErrorMessageHelper.processError(request, requests, errorMessage);
+//				} catch (RuntimeException r){
+//					ErrorBundle errorMessage = PlhUncheckedException.toErrorMessage(r, getClass().getName()+"#process");
+//					ErrorMessageHelper.processError(request, requests, errorMessage);
 				} finally {
 					requests.unlock(request);
 				} 

@@ -70,9 +70,9 @@ public class InitializationResponseValidationActionProcessor implements ActionPr
 			executeAction = true;
 		} catch(PlhUncheckedException e){
 			ErrorMessageHelper.processError(cmpRequest, requests, e.getErrorMessage());
-		} catch(RuntimeException e){
-			ErrorBundle errorMessage = PlhUncheckedException.toErrorMessage(e, InitializationResponseValidationActionProcessor.class.getName()+"#process");
-			ErrorMessageHelper.processError(cmpRequest, requests, errorMessage);
+//		} catch(RuntimeException e){
+//			ErrorBundle errorMessage = PlhUncheckedException.toErrorMessage(e, InitializationResponseValidationActionProcessor.class.getName()+"#process");
+//			ErrorMessageHelper.processError(cmpRequest, requests, errorMessage);
 		} finally {
 			requests.unlock(cmpRequest);
 		}

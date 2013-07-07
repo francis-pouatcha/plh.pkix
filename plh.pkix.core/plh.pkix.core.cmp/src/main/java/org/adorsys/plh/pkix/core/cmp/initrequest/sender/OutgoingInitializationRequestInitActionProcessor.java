@@ -79,11 +79,11 @@ public class OutgoingInitializationRequestInitActionProcessor implements ActionP
 					cmpRequest = new CMPRequest(new ASN1Integer(PKIBody.TYPE_INIT_REQ), new DERUTF8String(workflowId));
 					requestOut.newRequest(cmpRequest);
 					processingResult=ErrorMessageHelper.getASN1ProcessingResult(e.getErrorMessage());
-				} catch (RuntimeException r){
-					cmpRequest = new CMPRequest(new ASN1Integer(PKIBody.TYPE_INIT_REQ), new DERUTF8String(workflowId));
-					requestOut.newRequest(cmpRequest);
-					ErrorBundle errorMessage = PlhUncheckedException.toErrorMessage(r, getClass());
-					processingResult=ErrorMessageHelper.getASN1ProcessingResult(errorMessage);
+//				} catch (RuntimeException r){
+//					cmpRequest = new CMPRequest(new ASN1Integer(PKIBody.TYPE_INIT_REQ), new DERUTF8String(workflowId));
+//					requestOut.newRequest(cmpRequest);
+//					ErrorBundle errorMessage = PlhUncheckedException.toErrorMessage(r, getClass());
+//					processingResult=ErrorMessageHelper.getASN1ProcessingResult(errorMessage);
 				}
 
 			}

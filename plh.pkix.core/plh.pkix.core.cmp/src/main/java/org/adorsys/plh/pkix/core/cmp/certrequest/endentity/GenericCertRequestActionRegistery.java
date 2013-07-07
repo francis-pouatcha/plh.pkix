@@ -39,6 +39,12 @@ public class GenericCertRequestActionRegistery {
 		} else if(CertificationReplyImportPostAction.class.getName().equals(actionKlassName)){
 			Action postAction = new CertificationReplyImportPostAction(context);
 			actionHandler.handle(Arrays.asList(postAction));
+		} else if(CertificationReplyAcceptUserFeedbackPostAction.class.getName().equals(actionKlassName)){
+			Action postAction = new CertificationReplyAcceptUserFeedbackPostAction(context);
+			actionHandler.handle(Arrays.asList(postAction));
+		} else if(CertificationReplyValidationUserFeedbackPostAction.class.getName().equals(actionKlassName)){
+			Action postAction = new CertificationReplyValidationUserFeedbackPostAction(context);
+			actionHandler.handle(Arrays.asList(postAction));
 		}
 	}
 }

@@ -21,7 +21,6 @@ import org.adorsys.plh.pkix.core.utils.exception.PlhUncheckedException;
 import org.adorsys.plh.pkix.core.utils.store.CertAndCertPath;
 import org.bouncycastle.asn1.DERGeneralizedTime;
 import org.bouncycastle.asn1.DERIA5String;
-import org.bouncycastle.i18n.ErrorBundle;
 
 /**
  * Prepares and invoke the {@link CertificationReplyAcceptActionExecutor}. Forwards control
@@ -44,16 +43,21 @@ public class CertificationReplyAcceptActionPreProcessor implements ActionProcess
 		boolean executeAction = false;
 		requests.lock(cmpRequest);
 		try {
-			ProcessingResults<CertAndCertPath> processingResults = new CertificationReplyAcceptActionExecutor()
+			 List<ProcessingResults<CertAndCertPath>> processingResultsList = new CertificationReplyAcceptActionExecutor()
 					.withActionContext(actionContext)
 					.execute();
-			List<ASN1CertValidationResult> certValidationResults = new ArrayList<ASN1CertValidationResult>();
-			CertAndCertPath certAndCertPath = processingResults.getReturnValue();
-			ASN1CertValidationResult asn1CertValidationResult = new ASN1CertValidationResult(certAndCertPath.getCertHolder(),
-					cmpRequest.getTransactionID(),certAndCertPath.isValidSignature(), 
-					certAndCertPath.getCertPathAndOrigin().getCertPath(), certAndCertPath.getCertPathAndOrigin().getUserProvidedFlags(),
-					processingResults.getASN1Errors(), processingResults.getASN1Notifications());						
-			certValidationResults.add(asn1CertValidationResult);
+			 List<ASN1CertValidationResult> certValidationResults = new ArrayList<ASN1CertValidationResult>();
+
+			 // iterate
+			 for (ProcessingResults<CertAndCertPath> processingResults : processingResultsList) {
+				 CertAndCertPath certAndCertPath = processingResults.getReturnValue();
+					
+				 ASN1CertValidationResult asn1CertValidationResult = new ASN1CertValidationResult(certAndCertPath.getCertHolder(),
+						 cmpRequest.getTransactionID(),certAndCertPath.isValidSignature(), 
+						 certAndCertPath.getCertPathAndOrigin().getCertPath(), certAndCertPath.getCertPathAndOrigin().getUserProvidedFlags(),
+						 processingResults.getASN1Errors(), processingResults.getASN1Notifications());						
+				 certValidationResults.add(asn1CertValidationResult);
+			 }
 
 			ASN1CertValidationResults asn1CertValidationResults = new ASN1CertValidationResults(certValidationResults.toArray(new ASN1CertValidationResult[certValidationResults.size()]));
 
@@ -68,9 +72,6 @@ public class CertificationReplyAcceptActionPreProcessor implements ActionProcess
 			executeAction = true;
 		} catch(PlhUncheckedException e){
 			ErrorMessageHelper.processError(cmpRequest, requests, e.getErrorMessage());
-		} catch (RuntimeException r){
-			ErrorBundle errorMessage = PlhUncheckedException.toErrorMessage(r, getClass().getName()+"#process");
-			ErrorMessageHelper.processError(cmpRequest, requests, errorMessage);
 		} finally {
 			requests.unlock(cmpRequest);
 		} 

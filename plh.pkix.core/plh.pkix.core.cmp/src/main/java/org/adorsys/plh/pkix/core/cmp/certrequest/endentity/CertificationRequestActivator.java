@@ -21,7 +21,11 @@ public class CertificationRequestActivator extends ModuleActivator {
 		actionContext.put(CertificationRequestSendActionProcessor.class, new CertificationRequestSendActionProcessor());		
 
 		actionContext.put(CertificationReplyAcceptActionPreProcessor.class, new CertificationReplyAcceptActionPreProcessor());		
-		actionContext.put(CertificationReplyImportActionProcessor.class, new CertificationReplyImportActionProcessor());		
+		actionContext.put(CertificationReplyImportActionProcessor.class, new CertificationReplyImportActionProcessor());
+		
+		actionContext.put(CertificationReplyAcceptUserFeedbackProcessor.class, new CertificationReplyAcceptUserFeedbackProcessor());
+		actionContext.put(CertificationReplyValidationUserFeedbackProcessor.class, new CertificationReplyValidationUserFeedbackProcessor());
+		actionContext.put(CertificationReplyImportUserFeedbackProcessor.class, new CertificationReplyImportUserFeedbackProcessor());
 	}
 
 	@Override

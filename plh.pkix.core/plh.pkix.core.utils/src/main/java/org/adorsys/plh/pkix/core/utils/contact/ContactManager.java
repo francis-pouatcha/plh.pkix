@@ -41,6 +41,8 @@ public interface ContactManager {
 	//===============================================================================//
 	// 		READ OPERATIONS
 	//===============================================================================//
+//	public abstract PrivateKeyEntry findCaPrivateKeyEntryBySerialNumber(BigInteger serialNumber);
+
 	public abstract <T extends Entry> T findEntryBySerialNumber(Class<T> klass,
 			BigInteger serialNumber);
 
@@ -61,12 +63,12 @@ public interface ContactManager {
 
 	public abstract <T extends Entry> List<T> findEntriesBySubjectKeyIdentifier(
 			Class<T> klass, byte[] subjectKeyIdentifierBytes);
-
-	public abstract <T extends Entry> T findMessageEntryByIssuerCertificate(
-			Class<T> klass, X509CertificateHolder... issuerCertificates);
-
-	public abstract <T extends Entry> List<T> findMessageEntriesByIssuerCertificate(
-			Class<T> klass, X509CertificateHolder... issuerCertificates);
+//
+//	public abstract <T extends Entry> T findMessageEntryByIssuerCertificate(
+//			Class<T> klass, X509CertificateHolder... issuerCertificates);
+//
+//	public abstract <T extends Entry> List<T> findMessageEntriesByIssuerCertificate(
+//			Class<T> klass, X509CertificateHolder... issuerCertificates);
 
 	public abstract <T extends Entry> T findMessageEntryByEmail(Class<T> klass,
 			String... emails);

@@ -2,6 +2,7 @@ package org.adorsys.plh.pkix.core.utils.store;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.math.BigInteger;
 import java.security.Key;
 import java.security.KeyStore;
 import java.security.KeyStore.Entry;
@@ -82,6 +83,7 @@ public class KeyStoreWraper {
 				if(entry==null) continue;
 				if(entry.getClass()!=klass)continue;
 				java.security.cert.Certificate certificate = keyStore.getCertificate(alias);
+				if(!V3CertificateUtils.isSmimeKey(certificate)) continue;
 				List<String> subjectEmails = X500NameHelper.readSubjectEmails(certificate);
 				
 				for (String email : emails) {
@@ -109,6 +111,7 @@ public class KeyStoreWraper {
 				if(entry==null) continue;
 				if(entry.getClass()!=klass)continue;
 				java.security.cert.Certificate certificate = keyStore.getCertificate(alias);
+				if(!V3CertificateUtils.isSmimeKey(certificate)) continue;
 				List<String> subjectEmails = X500NameHelper.readSubjectEmails(certificate);
 				for (String email : emails) {
 					if(subjectEmails.contains(email)) result .add((T)entry); 
@@ -394,9 +397,9 @@ public class KeyStoreWraper {
 					if(entry.getClass()!=klass) continue;
 					java.security.cert.Certificate certificate = keyStore.getCertificate(alias);
 					if(certificate==null) continue;
+					if(!V3CertificateUtils.isCaKey(certificate)) continue;
 					X509CertificateHolder certHolder = V3CertificateUtils.getX509CertificateHolder(certificate);
 					if(!subject.equals(certHolder.getSubject())) continue;
-					if(!V3CertificateUtils.isCaKey(certificate)) continue;
 					r.add((T) entry);
 				}
 			}
@@ -409,6 +412,31 @@ public class KeyStoreWraper {
 		}
 	}
 
+	@SuppressWarnings("unchecked")
+	public <T extends Entry> T findCaEntryBySerialNumber(Class<T> klass,
+			BigInteger serialNumber) {
+		try {
+			Enumeration<String> aliases = keyStore.aliases();
+			while (aliases.hasMoreElements()) {
+				String alias = (String) aliases.nextElement();
+				Entry entry = getEntry(alias);
+				if(entry==null) continue;
+				if(entry.getClass()!=klass)continue;
+				java.security.cert.Certificate certificate = keyStore.getCertificate(alias);
+				if(!V3CertificateUtils.isCaKey(certificate)) continue;
+				X509CertificateHolder x509CertificateHolder = V3CertificateUtils.getX509CertificateHolder(certificate);
+				if(!serialNumber.equals(x509CertificateHolder.getSerialNumber())) continue;
+				return (T) entry;
+			}
+			return null;
+		} catch (KeyStoreException e){
+            ErrorBundle msg = new ErrorBundle(PlhPkixCoreMessages.class.getName(),
+            		PlhPkixCoreMessages.KeyStoreWraper_read_keystoreException,
+                    new Object[] { e.getMessage(), e , e.getClass().getName()});
+            throw new PlhUncheckedException(msg, e);
+		}
+	}
+	
 	@SuppressWarnings("unchecked")
 	public <T extends Entry> T findCaEntryByEmail(Class<T> klass,
 			String... emails) {
@@ -431,7 +459,7 @@ public class KeyStoreWraper {
 			return null;
 		} catch (KeyStoreException e){
             ErrorBundle msg = new ErrorBundle(PlhPkixCoreMessages.class.getName(),
-            		PlhPkixCoreMessages.KeyStoreWraper_certImport_keystoreException,
+            		PlhPkixCoreMessages.KeyStoreWraper_read_keystoreException,
                     new Object[] { e.getMessage(), e , e.getClass().getName()});
             throw new PlhUncheckedException(msg, e);
 		}

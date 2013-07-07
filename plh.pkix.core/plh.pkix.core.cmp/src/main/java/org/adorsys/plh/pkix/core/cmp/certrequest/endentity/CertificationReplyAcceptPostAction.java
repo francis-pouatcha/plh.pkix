@@ -23,11 +23,6 @@ public class CertificationReplyAcceptPostAction extends GenericAction {
 		byte[] actionData = requests.loadActionData(cmpRequest);
 		if(actionData == null) return;
 		ASN1CertValidationResults certValidationResults = ASN1CertValidationResults.getInstance(actionData);
-//		fore
-//		if(processingResult.getErrors()!=null || processingResult.getNotifications()!=null){
-//			setOutcome(USER_FEEDBACK_OUTCOME);
-//			return;
-//		}
 		
 		ASN1CertValidationResult[] certValidationResultArray = certValidationResults.toResultArray();
 		for (ASN1CertValidationResult asn1CertValidationResult : certValidationResultArray) {

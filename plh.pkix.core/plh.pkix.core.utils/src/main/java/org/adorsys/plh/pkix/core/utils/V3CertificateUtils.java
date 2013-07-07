@@ -203,7 +203,7 @@ public class V3CertificateUtils {
 	public static boolean isSigingCertificate(X509CertificateHolder signed,
 			X509CertificateHolder signer) {
 		// The issuer name of the signed certificate matches the subject name of the signer certificate
-		if(signed.getIssuer().equals(signer.getSubject())) return false;
+		if(!signed.getIssuer().equals(signer.getSubject())) return false;
 		
 		// signer certificate is a ca key
 		if(!isCaKey(signer)) return false;
@@ -216,14 +216,15 @@ public class V3CertificateUtils {
 		SubjectKeyIdentifier subjectKeyIdentifier = KeyIdUtils.readSubjectKeyIdentifier(signer);
 		
 		// both match
-		if(Arrays.equals(subjectKeyIdentifier.getKeyIdentifier(), authorityKeyIdentifier.getKeyIdentifier())) return false;
+		if(!Arrays.equals(subjectKeyIdentifier.getKeyIdentifier(), authorityKeyIdentifier.getKeyIdentifier())) return false;
 		
 		// including serial
 		if(!signer.getSerialNumber().equals(authorityKeyIdentifier.getAuthorityCertSerialNumber())) return false;
 		
-		if(!verify(signed, signer))return false;	
-		// then everything is ok
-		return true;
+		return verify(signed, signer);
+//		return false;	
+//		// then everything is ok
+//		return true;
 	}
 	
 	private static boolean verify(X509CertificateHolder signed,

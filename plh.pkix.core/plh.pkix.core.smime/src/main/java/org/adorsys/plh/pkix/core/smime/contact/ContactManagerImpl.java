@@ -70,32 +70,44 @@ public class ContactManagerImpl implements ContactManager {
 		return contactIndex;
 	}
 
-	/* (non-Javadoc)
-	 * @see org.adorsys.plh.pkix.core.smime.contact.ContactManager#addCertEntry(org.bouncycastle.cert.X509CertificateHolder)
-	 */
-	@Override
-	public void addCertEntry(X509CertificateHolder certHolder) throws PlhCheckedException{
-		List<String> subjectEmails = X500NameHelper.readSubjectEmails(certHolder);
+	private String checkAndReturnKeyStoreId(List<String> subjectEmails){
 		Set<String> keyStores = new HashSet<String>();
 		for (String email : subjectEmails) {
 			String keyStoreId = contactIndex.findKeyStoreIdByEmail(email);
 			if(keyStoreId!=null)keyStores.add(keyStoreId);
 		}
 		if(keyStores.size()>2) throw new IllegalArgumentException("Certificate contains key spread into more than two keystore.");
-		String keyStoreId = null;
-		if(!keyStores.isEmpty())
-			keyStoreId = keyStores.iterator().next();
-		
+
+		if(!keyStores.isEmpty())return keyStores.iterator().next();
+		return null;
+	}
+	
+	private String processCaKey(X509CertificateHolder certHolder, String keyStoreId){
 		String caKeyStoreId = null;
 		if(V3CertificateUtils.isCaKey(certHolder)){
 			X500Name subject = certHolder.getSubject();
 			caKeyStoreId = contactIndex.getCaKeyStoreId(subject);
 			if(caKeyStoreId!=null && keyStoreId!=null && !StringUtils.equals(keyStoreId, caKeyStoreId))
-				if(keyStores.size()>2) throw new IllegalArgumentException("Ca subject is included in aother key store.");
-
-			if(keyStoreId==null)
-				keyStoreId = caKeyStoreId;
+				throw new IllegalArgumentException("Ca subject is included in aother key store.");
+			
+			if(caKeyStoreId==null)caKeyStoreId=keyStoreId;
 		}
+		return caKeyStoreId;
+	}
+
+	/* (non-Javadoc)
+	 * @see org.adorsys.plh.pkix.core.smime.contact.ContactManager#addCertEntry(org.bouncycastle.cert.X509CertificateHolder)
+	 */
+	@Override
+	public void addCertEntry(X509CertificateHolder certHolder) throws PlhCheckedException{
+		List<String> subjectEmails = X500NameHelper.readSubjectEmails(certHolder);
+
+		String keyStoreId = checkAndReturnKeyStoreId(subjectEmails);
+		
+		String caKeyStoreId = processCaKey(certHolder, keyStoreId);
+
+		if(keyStoreId==null&&caKeyStoreId!=null)
+			keyStoreId = caKeyStoreId;
 		
 		if(keyStoreId==null){
 			keyStoreId = UUID.randomUUID().toString();			
@@ -107,10 +119,9 @@ public class ContactManagerImpl implements ContactManager {
 		contactIndex.addContact(subjectEmails, keyStoreAlias, keyStoreId);
 		if(caKeyStoreId!=null)
 			contactIndex.putCaKeyStoreId(certHolder.getSubject(),caKeyStoreId);
-
+		
 		KeyStoreWraper keyStoreWraper = loadKeyStore(keyStoreId);
-		if(keyStoreWraper!=null)
-			keyStoreWraper.importCertificates(V3CertificateUtils.getX509BCCertificate(certHolder));
+		keyStoreWraper.importCertificates(V3CertificateUtils.getX509BCCertificate(certHolder));
 		
 		for (ContactListener contactListener : contactListeners) {
 			contactListener.contactAdded(certHolder);
@@ -124,56 +135,59 @@ public class ContactManagerImpl implements ContactManager {
 	public void addPrivateKeyEntry(Key key,Certificate[] chain) throws PlhCheckedException{
 		X509CertificateHolder certHolder = V3CertificateUtils.getX509CertificateHolder(chain[0]);
 		List<String> subjectEmails = X500NameHelper.readSubjectEmails(certHolder);
-		Set<String> keyStores = new HashSet<String>();
-		for (String email : subjectEmails) {
-			String keyStoreId = contactIndex.findKeyStoreIdByEmail(email);
-			if(keyStoreId!=null)keyStores.add(keyStoreId);
-		}
-		if(keyStores.size()>2) throw new IllegalArgumentException("Certificate contains key spread into more than two keystore.");
-		
-		String keyStoreId = null;
-		KeyStoreWraper keyStoreWraper = null;
-		if(keyStores.isEmpty()){
+
+		String keyStoreId = checkAndReturnKeyStoreId(subjectEmails);
+
+		String caKeyStoreId = processCaKey(certHolder, keyStoreId);
+
+		if(keyStoreId==null&&caKeyStoreId!=null)
+			keyStoreId = caKeyStoreId;
+
+		if(keyStoreId==null){
 			keyStoreId = UUID.randomUUID().toString();			
-		} else {
-			keyStoreId = keyStores.iterator().next();
-			keyStoreWraper = contacts.get(keyStoreId);
+			if(V3CertificateUtils.isCaKey(certHolder))
+				caKeyStoreId = keyStoreId;
 		}
-		if(keyStoreWraper==null){
-			FileWrapper contactDir = contactsDir.newChild(keyStoreId);
-			keyStoreWraper = contactDir.getKeyStoreWraper();
-			if(keyStoreWraper!=null)
-				contacts.put(keyStoreId, keyStoreWraper);
-		}
+		
 		KeyStoreAlias keyStoreAlias = new KeyStoreAlias(certHolder, TrustedCertificateEntry.class);
 		contactIndex.addContact(subjectEmails, keyStoreAlias, keyStoreId);
-		if(keyStoreWraper!=null){
-			keyStoreWraper.importCertificates(V3CertificateUtils.getX509BCCertificate(certHolder));
-			keyStoreWraper.setPrivateKeyEntry(key, chain);
-		}
+		if(caKeyStoreId!=null)
+			contactIndex.putCaKeyStoreId(certHolder.getSubject(),caKeyStoreId);
+		
+		KeyStoreWraper keyStoreWraper = loadKeyStore(keyStoreId);
+		keyStoreWraper.importCertificates(V3CertificateUtils.getX509BCCertificate(certHolder));
+		keyStoreWraper.setPrivateKeyEntry(key, chain);
 	}
 	
 	/* (non-Javadoc)
 	 * @see org.adorsys.plh.pkix.core.smime.contact.ContactManager#importIssuedCertificate(org.bouncycastle.asn1.x509.Certificate[])
-	 */
+`	 */
 	@Override
 	public void importIssuedCertificate(org.bouncycastle.asn1.x509.Certificate[] certArray) throws PlhCheckedException {
-		X509CertificateHolder certHldr = new X509CertificateHolder(certArray[0]);
-		String publicKeyIdHex = KeyIdUtils.createPublicKeyIdentifierAsString(certHldr);
+		X509CertificateHolder certHolder = new X509CertificateHolder(certArray[0]);
+		String publicKeyIdHex = KeyIdUtils.createPublicKeyIdentifierAsString(certHolder);
+		
 		String keyStoreId = contactIndex.findByPublicKeyId(publicKeyIdHex);
 		if(keyStoreId==null){
             ErrorBundle msg = new ErrorBundle(PlhPkixCoreMessages.class.getName(),
             		PlhPkixCoreMessages.KeyStoreWraper_certImport_missingPrivateKeyEntry,
-                    new Object[] { certHldr.getSubject(), certHldr.getIssuer(), certHldr.getSerialNumber()});
+                    new Object[] { certHolder.getSubject(), certHolder.getIssuer(), certHolder.getSerialNumber()});
             throw new PlhCheckedException(msg);
 		}
 		
+		String caKeyStoreId = processCaKey(certHolder, keyStoreId);
+
+		List<String> subjectEmails = X500NameHelper.readSubjectEmails(certHolder);
+		KeyStoreAlias keyStoreAlias = new KeyStoreAlias(certHolder, PrivateKeyEntry.class);
+		contactIndex.addContact(subjectEmails, keyStoreAlias, keyStoreId);
+		if(caKeyStoreId!=null)
+			contactIndex.putCaKeyStoreId(certHolder.getSubject(),caKeyStoreId);
+		
 		KeyStoreWraper loadedKeyStore = loadKeyStore(keyStoreId);
-		if(loadedKeyStore!=null)
-			loadedKeyStore.importIssuedCertificate(certArray);
+		loadedKeyStore.importIssuedCertificate(certArray);
 		
 		for (ContactListener contactListener : contactListeners) {
-			contactListener.issuedCertificateImported(certHldr);
+			contactListener.issuedCertificateImported(certHolder);
 		}
 		
 	}
@@ -205,7 +219,8 @@ public class ContactManagerImpl implements ContactManager {
 	@Override
 	public <T extends Entry> List<T> findEntriesByPublicKeyInfo(Class<T> klass,
 			SubjectPublicKeyInfo subjectPublicKeyInfo) {
-		 List<KeyStoreAlias> keyStoreAliases = KeyStoreAlias.selectByPublicKeyIdentifier(keyStoreAliases(), subjectPublicKeyInfo, klass);
+		List<KeyStoreAlias> allKas = keyStoreAliases();
+		 List<KeyStoreAlias> keyStoreAliases = KeyStoreAlias.selectByPublicKeyIdentifier(allKas, subjectPublicKeyInfo, klass);
 		return findEntriesByAlias(klass, keyStoreAliases);
 	}
 
@@ -246,32 +261,6 @@ public class ContactManagerImpl implements ContactManager {
 	public <T extends Entry> List<T> findEntriesBySubjectKeyIdentifier(
 			Class<T> klass, byte[] subjectKeyIdentifierBytes) {
 		 List<KeyStoreAlias> keyStoreAliases = KeyStoreAlias.selectBySubjectKeyIdentifier(keyStoreAliases(), subjectKeyIdentifierBytes, klass);
-		return findEntriesByAlias(klass, keyStoreAliases);
-	}
-
-	/* (non-Javadoc)
-	 * @see org.adorsys.plh.pkix.core.smime.contact.ContactManager#findMessageEntryByIssuerCertificate(java.lang.Class, org.bouncycastle.cert.X509CertificateHolder)
-	 */
-	@Override
-	public <T extends Entry> T findMessageEntryByIssuerCertificate(
-			Class<T> klass, X509CertificateHolder... issuerCertificates) {
-		List<KeyStoreAlias> keyStoreAliases = new ArrayList<KeyStoreAlias>();
-		for (X509CertificateHolder x509CertificateHolder : issuerCertificates) {
-			keyStoreAliases.add(new KeyStoreAlias(x509CertificateHolder, klass));
-		}
-		return findEntryByAlias(klass, keyStoreAliases);
-	}
-
-	/* (non-Javadoc)
-	 * @see org.adorsys.plh.pkix.core.smime.contact.ContactManager#findMessageEntriesByIssuerCertificate(java.lang.Class, org.bouncycastle.cert.X509CertificateHolder)
-	 */
-	@Override
-	public <T extends Entry> List<T> findMessageEntriesByIssuerCertificate(
-			Class<T> klass, X509CertificateHolder... issuerCertificates) {
-		List<KeyStoreAlias> keyStoreAliases = new ArrayList<KeyStoreAlias>();
-		for (X509CertificateHolder x509CertificateHolder : issuerCertificates) {
-			keyStoreAliases.add(new KeyStoreAlias(x509CertificateHolder, klass));
-		}
 		return findEntriesByAlias(klass, keyStoreAliases);
 	}
 
@@ -319,7 +308,7 @@ public class ContactManagerImpl implements ContactManager {
 		}
 		return result;
 	}
-
+	
 	/* (non-Javadoc)
 	 * @see org.adorsys.plh.pkix.core.smime.contact.ContactManager#findCaEntryBySubject(java.lang.Class, org.bouncycastle.asn1.x500.X500Name)
 	 */
@@ -666,7 +655,12 @@ public class ContactManagerImpl implements ContactManager {
 		}
 		return null;
 	}
-
+//
+//	@Override
+//	public PrivateKeyEntry findCaPrivateKeyEntryBySerialNumber(BigInteger serialNumber) {
+//		return mainKeyStoreWraper.findCaEntryBySerialNumber(PrivateKeyEntry.class, serialNumber);
+//	}
+	
 	@Override
 	public Set<String> listContacts() {
 		return contactIndex.listEmailContacts();

@@ -226,9 +226,9 @@ public class OutgoingInitializationResponseActionProcessor implements ActionProc
 			executeAction = true;
 		} catch(PlhUncheckedException e){
 			ErrorMessageHelper.processError(cmpRequest, requests, e.getErrorMessage());
-		} catch (RuntimeException r){
-			ErrorBundle errorMessage = PlhUncheckedException.toErrorMessage(r, getClass().getName()+"#process");
-			ErrorMessageHelper.processError(cmpRequest, requests, errorMessage);
+//		} catch (RuntimeException r){
+//			ErrorBundle errorMessage = PlhUncheckedException.toErrorMessage(r, getClass().getName()+"#process");
+//			ErrorMessageHelper.processError(cmpRequest, requests, errorMessage);
 		} finally {
 			requests.unlock(cmpRequest);
 		} 

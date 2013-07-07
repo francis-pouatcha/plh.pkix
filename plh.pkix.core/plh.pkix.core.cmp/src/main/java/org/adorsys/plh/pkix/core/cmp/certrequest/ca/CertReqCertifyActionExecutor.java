@@ -1,6 +1,5 @@
 package org.adorsys.plh.pkix.core.cmp.certrequest.ca;
 
-import java.math.BigInteger;
 import java.security.KeyStore.PrivateKeyEntry;
 import java.security.PublicKey;
 import java.security.cert.Certificate;
@@ -16,6 +15,7 @@ import org.adorsys.plh.pkix.core.utils.asn1.ASN1CertificateChain;
 import org.adorsys.plh.pkix.core.utils.contact.ContactManager;
 import org.adorsys.plh.pkix.core.utils.jca.X509CertificateBuilder;
 import org.bouncycastle.asn1.crmf.CertTemplate;
+import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.AuthorityInformationAccess;
 import org.bouncycastle.asn1.x509.BasicConstraints;
 import org.bouncycastle.asn1.x509.Extension;
@@ -42,11 +42,16 @@ public class CertReqCertifyActionExecutor {
 		checker.checkDirty().checkNull(certTemplate,actionContext);
 		
 		ContactManager contactManager = actionContext.get(ContactManager.class);
-
-		// this is the serial number of the certificate used by the issuer 
-		// to sign this certificate.
-		BigInteger serialNumber = certTemplate.getSerialNumber().getValue();
-		PrivateKeyEntry privateKeyEntry = contactManager.findEntryBySerialNumber(PrivateKeyEntry.class, serialNumber);
+		PrivateKeyEntry privateKeyEntry = null;
+		
+		// If the issuer field is not null, try to find the ca certificate with the given issuer
+		X500Name issuer = certTemplate.getIssuer();
+		if(issuer!=null){
+			privateKeyEntry = contactManager.findCaEntryBySubject(PrivateKeyEntry.class, certTemplate.getIssuer());
+		}
+		if(privateKeyEntry==null){
+			privateKeyEntry = contactManager.getMainCaPrivateKeyEntry();
+		}
 
 		SubjectPublicKeyInfo subjectPublicKeyInfo = certTemplate.getPublicKey();
 		PublicKey subjectPublicKey;

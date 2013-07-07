@@ -12,10 +12,14 @@ import org.bouncycastle.asn1.x500.X500Name;
 
 /**
  * Simple index file of all contacts maintained by an end entity.
+ * 
  * Each contact is represented by one or many records.
+ * 
  * Each record has the form <StrictEmailAddress>=<KeyStoreLocation>.
+ * 
  * Many Emails can point to the same key store. Meaning that they represent
  * the same end entity. Each email is associated with atleast one certificate.
+ * 
  * A single certificate might also represent many emails.
  * 
  * Emails must be store in the subjectAlternativeName extension of the certificate.
@@ -26,11 +30,12 @@ import org.bouncycastle.asn1.x500.X500Name;
  * subjectAlternativeName extension.
  * 
  * The index key is the lower case strict version of the email. This means that 
+ * 
  * <Francis Pouatcha Signing>"fpo@me.com" is equivalent to 
  * <Francis Pouatcha Ca>"fpo@me.com" because both map to fpo@me.com.
  * 
  * Is an email address is reserved by an endentity, the application will
- * not allow the storage of that email for another end entity. Tha application
+ * not allow the storage of that email for another end entity. That application
  * will refuse to import the corresponding contact.
  * 
  * If a certificate is signed by a address authority, this certificate will have 
@@ -46,6 +51,8 @@ public class ContactIndex {
 	private Map<KeyStoreAlias, String> keyAlias2KeyStoreId = new HashMap<KeyStoreAlias, String>();
 	private Map<String, String> publicKeyId2KeyStoreId = new HashMap<String, String>();
 	private Map<String, String> subjectKeyId2KeyStoreId = new HashMap<String, String>();
+	
+	// CA names are generally exact and can be used to index records.
 	private Map<X500Name, String> caKeyStores = new HashMap<X500Name, String>();
 
 	public void addContact(List<String> emails, KeyStoreAlias keyStoreAlias, String keyStoreId){

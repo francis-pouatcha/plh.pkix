@@ -16,6 +16,7 @@ import org.adorsys.plh.pkix.core.cmp.certrequest.endentity.CertificationRequestF
 import org.adorsys.plh.pkix.core.cmp.initrequest.sender.InitializationRequestFieldHolder;
 import org.adorsys.plh.pkix.core.utils.V3CertificateUtils;
 import org.apache.commons.io.FileUtils;
+import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.GeneralName;
 import org.bouncycastle.asn1.x509.GeneralNames;
 import org.bouncycastle.cert.X509CertificateHolder;
@@ -103,25 +104,38 @@ public class SingEncryptScenarioTests {
 			timBlockingContactListener.waitForContacts();
 		}
 		timContacts = timsAccount.findContacts(certAUthEmail);
-		Assert.assertEquals(2, timContacts.size());
+		Assert.assertEquals(1, timContacts.size());
 		
 		
 		PrivateKeyEntry timMainMessagePrivateKey = timsAccount.getMainMessagePrivateKey();
 		CertificationRequestFieldHolder crf = new CertificationRequestFieldHolder(timMainMessagePrivateKey);
+		
 		TrustedCertificateEntry certAuthCaCertificate = timsAccount.findCaSigningCertificateByEmail(certAUthEmail);
 		TrustedCertificateEntry certAuthMessagingCertificate = timsAccount.findMessagingCertificateByEmail(certAUthEmail);
 	
-		X509CertificateHolder certAuthorityCertHolder = V3CertificateUtils.getX509CertificateHolder(certAuthCaCertificate.getTrustedCertificate());
-		crf.setCertAuthorityName(certAuthorityCertHolder.getSubject());
+		X509CertificateHolder certAuthorityCaCertHolder = V3CertificateUtils.getX509CertificateHolder(certAuthCaCertificate.getTrustedCertificate());
+		crf.setCertAuthorityName(certAuthorityCaCertHolder.getSubject());
 		X509CertificateHolder receiverCertificate = V3CertificateUtils.getX509CertificateHolder(certAuthMessagingCertificate.getTrustedCertificate());
 		crf.setReceiverCertificate(receiverCertificate);
 		crf.setReceiverEmail(certAUthEmail);
-		timBlockingContactListener.expectIssuedCertficate(certAUthEmail);
+		timBlockingContactListener.expectIssuedCertficate(certAuthorityCaCertHolder.getSubject());
 		timsAccount.sendCertificationRequest(crf);
 		timBlockingContactListener.waitForIssuedCertificates();
 		
-		PrivateKeyEntry privateKeyByIssuer = timsAccount.findMessagePrivateKeyByIssuer(certAuthorityCertHolder);
-		Assert.assertNotNull(privateKeyByIssuer);
+		
+		X509CertificateHolder timSampleCertificate = V3CertificateUtils.getX509CertificateHolder(timMainMessagePrivateKey.getCertificate());
+		List<PrivateKeyEntry> timKeyEntries = timsAccount.findAllMessagePrivateKeyEntriesByPublicKey(timSampleCertificate);
+		PrivateKeyEntry certifiedPrivateKeyEntry = null;
+		for (PrivateKeyEntry privateKeyEntry : timKeyEntries) {
+			X509CertificateHolder certHolder = V3CertificateUtils.getX509CertificateHolder(privateKeyEntry.getCertificate());
+			X500Name issuer = certHolder.getIssuer();
+			if(!issuer.equals(certAuthorityCaCertHolder.getSubject())) continue;
+			if(V3CertificateUtils.isSigingCertificate(certHolder, certAuthorityCaCertHolder)){
+				certifiedPrivateKeyEntry = privateKeyEntry; 
+				break;
+			}
+		}
+		Assert.assertNotNull(certifiedPrivateKeyEntry);
 		
 	}		
 	
