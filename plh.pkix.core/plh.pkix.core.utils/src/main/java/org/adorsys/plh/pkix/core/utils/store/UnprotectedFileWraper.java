@@ -6,6 +6,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URI;
 
 /**
  * @author francis
@@ -17,15 +18,21 @@ public class UnprotectedFileWraper implements FileWrapper{
 	private File file;
 	private File rootFile;
 	
-	private UnprotectedFileContainer container;
+//	private UnprotectedFileContainer container;
 	
-	public UnprotectedFileWraper(String path, File rootFile, UnprotectedFileContainer container) {
+	public UnprotectedFileWraper(String path, File rootFile) {
 		super();
 		this.path = path;
 		this.rootFile = rootFile;
 		this.file = new File(rootFile, path);
-		this.container = container;
 	}
+//	public UnprotectedFileWraper(String path, File rootFile, UnprotectedFileContainer container) {
+//		super();
+//		this.path = path;
+//		this.rootFile = rootFile;
+//		this.file = new File(rootFile, path);
+//		this.container = container;
+//	}
 
 	@Override
 	public InputStream newInputStream() {
@@ -88,7 +95,8 @@ public class UnprotectedFileWraper implements FileWrapper{
 
 	@Override
 	public FileWrapper newChild(String name) {
-		return new UnprotectedFileWraper(name, file, container);
+		throw new UnsupportedOperationException("Unprotected file wrapper does not support nested children");
+//		return new UnprotectedFileWraper(name, file, container);
 	}
 
 	/**
@@ -102,5 +110,10 @@ public class UnprotectedFileWraper implements FileWrapper{
 	@Override
 	public KeyStoreWraper getKeyStoreWraper() {
 		return null;
+	}
+
+	@Override
+	public URI getURI() {
+		return file.toURI();
 	}
 }

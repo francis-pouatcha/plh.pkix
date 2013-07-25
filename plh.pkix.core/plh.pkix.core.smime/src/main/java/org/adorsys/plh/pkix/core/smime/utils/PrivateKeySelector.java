@@ -2,8 +2,10 @@ package org.adorsys.plh.pkix.core.smime.utils;
 
 import java.math.BigInteger;
 import java.security.KeyStore.PrivateKeyEntry;
+import java.util.List;
 
 import org.adorsys.plh.pkix.core.utils.BuilderChecker;
+import org.adorsys.plh.pkix.core.utils.KeyStoreAlias;
 import org.adorsys.plh.pkix.core.utils.contact.ContactManager;
 import org.adorsys.plh.pkix.core.utils.jca.KeySelector;
 import org.bouncycastle.cms.KeyTransRecipientId;
@@ -26,13 +28,18 @@ public class PrivateKeySelector {
         	
         KeyTransRecipientId keyTransRecipientId = (KeyTransRecipientId) recipientId;
         byte[] subjectKeyIdentifier = keyTransRecipientId.getSubjectKeyIdentifier();
+        List<KeyStoreAlias> allKeyStoreAliases = contactManager.keyStoreAliases();
         if(subjectKeyIdentifier!=null){
-        	PrivateKeyEntry pk = contactManager.findEntryBySubjectKeyIdentifier(PrivateKeyEntry.class, subjectKeyIdentifier);
+   		 	List<KeyStoreAlias> selectedKeyStoreAliases = KeyStoreAlias.selectBySubjectKeyIdentifier(
+   		 		allKeyStoreAliases, subjectKeyIdentifier, PrivateKeyEntry.class);
+        	
+        	PrivateKeyEntry pk = contactManager.findEntryByAlias(PrivateKeyEntry.class, selectedKeyStoreAliases);
         	if(pk!=null) return pk;
         }
         
         BigInteger serialNumber = keyTransRecipientId.getSerialNumber();
-        return contactManager.findEntryBySerialNumber(PrivateKeyEntry.class, serialNumber);
+        List<KeyStoreAlias> selectedKeyStoreAliases = KeyStoreAlias.selectBySerialNumber(allKeyStoreAliases, serialNumber);
+        return contactManager.findEntryByAlias(PrivateKeyEntry.class, selectedKeyStoreAliases);
 	}
 
 	public PrivateKeySelector withRecipientInformation(RecipientInformation recipientInformation) {

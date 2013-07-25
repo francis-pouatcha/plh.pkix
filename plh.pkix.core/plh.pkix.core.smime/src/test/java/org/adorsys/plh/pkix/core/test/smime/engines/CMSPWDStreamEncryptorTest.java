@@ -11,10 +11,17 @@ import org.adorsys.plh.pkix.core.smime.engines.CMSPWDStreamDecryptor;
 import org.adorsys.plh.pkix.core.smime.engines.CMSPWDStreamEncryptor;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Test;
 
 public class CMSPWDStreamEncryptorTest {
+	private static final File testDir = new File("target/"+CMSPWDStreamEncryptorTest.class.getSimpleName());
+
+	@AfterClass
+	public static void cleanup(){
+		FileUtils.deleteQuietly(testDir);
+	}
 	@Test
 	public void test() throws Exception {
 

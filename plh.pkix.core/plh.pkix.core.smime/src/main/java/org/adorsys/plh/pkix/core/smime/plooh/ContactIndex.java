@@ -1,14 +1,11 @@
-package org.adorsys.plh.pkix.core.smime.contact;
+package org.adorsys.plh.pkix.core.smime.plooh;
 
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.adorsys.plh.pkix.core.utils.KeyStoreAlias;
 import org.apache.commons.lang3.StringUtils;
-import org.bouncycastle.asn1.x500.X500Name;
 
 /**
  * Simple index file of all contacts maintained by an end entity.
@@ -46,23 +43,11 @@ import org.bouncycastle.asn1.x500.X500Name;
  */
 public class ContactIndex {
 	
-	private Map<String, String> email2KeyStoreId = new HashMap<String, String>();
-	private Map<String, Set<String>> keyStoreId2Emails = new HashMap<String, Set<String>>();
 	private Map<KeyStoreAlias, String> keyAlias2KeyStoreId = new HashMap<KeyStoreAlias, String>();
 	private Map<String, String> publicKeyId2KeyStoreId = new HashMap<String, String>();
 	private Map<String, String> subjectKeyId2KeyStoreId = new HashMap<String, String>();
-	
-	// CA names are generally exact and can be used to index records.
-	private Map<X500Name, String> caKeyStores = new HashMap<X500Name, String>();
 
-	public void addContact(List<String> emails, KeyStoreAlias keyStoreAlias, String keyStoreId){
-		for (String email : emails) {
-			if(email==null) continue;
-			String keyStoreIdFoud = email2KeyStoreId.get(email.toLowerCase());
-			if(keyStoreIdFoud!=null && !StringUtils.equalsIgnoreCase(keyStoreId, keyStoreIdFoud))
-				throw new IllegalArgumentException("Email in use by key store: "+keyStoreIdFoud + " so it can not be indexed for " + keyStoreId);
-		}
-		
+	public void addContact(String keyStoreId, KeyStoreAlias keyStoreAlias){
 		String keyStoreIdFound = keyAlias2KeyStoreId.get(keyStoreAlias);
 		if(keyStoreIdFound!=null && !StringUtils.equalsIgnoreCase(keyStoreIdFound, keyStoreId)){
 			throw new IllegalArgumentException("key alias already included in keystore : "+keyStoreIdFound + 
@@ -82,31 +67,12 @@ public class ContactIndex {
 			throw new IllegalArgumentException("subject key id already included in keystore : "+keyStoreIdFound + 
 					" so it can not be indexed for " + keyStoreId);
 		}
-		
-		Set<String> emailSet = keyStoreId2Emails.get(keyStoreId);
-		if(emailSet==null){
-			emailSet = new HashSet<String>();
-			keyStoreId2Emails.put(keyStoreId, emailSet);
-		}
-		for (String email : emails) {
-			if(email==null) continue;
-			email2KeyStoreId.put(email.toLowerCase(), keyStoreId);
-			emailSet.add(email.toLowerCase());
-		}
+
 		keyAlias2KeyStoreId.put(keyStoreAlias, keyStoreId);
 		publicKeyId2KeyStoreId.put(publicKeyIdHex, keyStoreId);
 		subjectKeyId2KeyStoreId.put(subjectKeyIdHex, keyStoreId);
 	}
-	
-	public String findKeyStoreIdByEmail(String email){
-		if(email==null) return null;
-		return email2KeyStoreId.get(email.toLowerCase());
-	}
 
-	public Set<String> listEmailContacts() {
-		return email2KeyStoreId.keySet();
-	}
-	
 	public Set<KeyStoreAlias> keyStoreAliases(){
 		return keyAlias2KeyStoreId.keySet();
 	}
@@ -121,14 +87,5 @@ public class ContactIndex {
 	
 	public String findBySubjectKeyId(String subjectKeyIdHex){
 		return subjectKeyId2KeyStoreId.get(subjectKeyIdHex);
-	}
-
-	public String getCaKeyStoreId(X500Name subject) {
-		return caKeyStores .get(subject);
-		
-	}
-
-	public void putCaKeyStoreId(X500Name subject, String keyStoreId) {
-		caKeyStores.put(subject, keyStoreId);
 	}
 }

@@ -8,6 +8,7 @@ import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.ASN1OctetString;
 import org.bouncycastle.asn1.crmf.CertTemplate;
+import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.AuthorityKeyIdentifier;
 import org.bouncycastle.asn1.x509.Extension;
 import org.bouncycastle.asn1.x509.Extensions;
@@ -135,5 +136,11 @@ public class KeyIdUtils {
     public static String hexEncode(ASN1Integer value){
     	if(value==null) return null;
     	return value.getPositiveValue().toString(16);
+    }
+    
+    public static String readEndEntityIdentifier(X509CertificateHolder certHldr){
+    	X500Name subjectDN = X500NameHelper.readSubjectDN(certHldr);
+    	if(subjectDN==null) return null;
+    	return X500NameHelper.readUniqueIdentifier(subjectDN);
     }
 }

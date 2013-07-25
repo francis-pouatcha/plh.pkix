@@ -2,6 +2,7 @@ package org.adorsys.plh.pkix.core.utils.store;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URI;
 
 /**
  * In order to protect user data on the file system, module reading and writing file
@@ -50,6 +51,8 @@ public interface FileWrapper {
 	 * @return
 	 */
 	public String getName();
+	public URI getURI();
+
 	
 	public String getParent();
 	

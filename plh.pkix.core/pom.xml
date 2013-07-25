@@ -10,6 +10,8 @@
   	<module>plh.pkix.core.utils</module>
   	<module>plh.pkix.core.smime</module>
   	<module>plh.pkix.core.cmp</module>
+  	<module>plh.pkix.core.smtp</module>
+  	<module>plh.pkix.core.client</module>
   </modules>
   
 	<dependencies>

@@ -15,32 +15,43 @@ import java.util.UUID;
 
 import javax.mail.internet.MimeBodyPart;
 
-import org.adorsys.plh.pkix.core.smime.contact.ContactManagerImpl;
 import org.adorsys.plh.pkix.core.smime.engines.SMIMEBodyPartSigner;
 import org.adorsys.plh.pkix.core.smime.engines.SMIMEBodyPartVerifier;
+import org.adorsys.plh.pkix.core.smime.plooh.ContactManagerImpl;
+import org.adorsys.plh.pkix.core.utils.KeyStoreAlias;
+import org.adorsys.plh.pkix.core.utils.X500NameHelper;
 import org.adorsys.plh.pkix.core.utils.contact.ContactManager;
 import org.adorsys.plh.pkix.core.utils.jca.KeyPairBuilder;
 import org.adorsys.plh.pkix.core.utils.store.CMSSignedMessageValidator;
 import org.adorsys.plh.pkix.core.utils.store.KeyStoreWraper;
-import org.adorsys.plh.pkix.core.utils.x500.X500NameHelper;
+import org.adorsys.plh.pkix.core.utils.store.UnprotectedFileWraper;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.bouncycastle.asn1.x500.X500Name;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Test;
 
 public class SMIMEBodyPartSignerTest {
+	private static final File testDir = new File("target/"+SMIMEBodyPartSignerTest.class.getSimpleName());
 
-	private X500Name subjectX500Name = X500NameHelper.makeX500Name("francis", "francis@plhtest.biz", UUID.randomUUID().toString());
+	@AfterClass
+	public static void cleanup(){
+		FileUtils.deleteQuietly(testDir);
+	}
+
+	private X500Name subjectX500Name = X500NameHelper.makeX500Name("francis", "francis@plhtest.biz", UUID.randomUUID().toString(), UUID.randomUUID().toString());
 	@Test
 	public void test() throws Exception {
-		KeyStoreWraper keyStoreWraper = new KeyStoreWraper(null, "private key password".toCharArray(), "Keystore password".toCharArray());
+		KeyStoreWraper keyStoreWraper = new KeyStoreWraper(new UnprotectedFileWraper("test", testDir), "private key password".toCharArray(), "Keystore password".toCharArray());
 		new KeyPairBuilder()
 			.withEndEntityName(subjectX500Name)
 			.withKeyStoreWraper(keyStoreWraper)
 			.build();
-		ContactManager contactManager = new ContactManagerImpl(keyStoreWraper, null);
-		PrivateKeyEntry privateKeyEntry = contactManager.getMainMessagePrivateKeyEntry();
+		ContactManager contactManager = new ContactManagerImpl(keyStoreWraper);
+		KeyStoreAlias keyStoreAlias = new KeyStoreAlias(null, null, null, null,
+				null, KeyStoreAlias.PurposeEnum.ME, PrivateKeyEntry.class);
+		PrivateKeyEntry privateKeyEntry = contactManager.findEntryByAlias(PrivateKeyEntry.class, keyStoreAlias);
 
 		ArrayList<X509Certificate> senderCertificateChain = new ArrayList<X509Certificate>();
 		Certificate[] certificateChain = privateKeyEntry.getCertificateChain();
@@ -95,13 +106,15 @@ public class SMIMEBodyPartSignerTest {
 
 	@Test
 	public void testOI() throws Exception {
-		KeyStoreWraper keyStoreWraper = new KeyStoreWraper(null, "private key password".toCharArray(), "Keystore password".toCharArray());
+		KeyStoreWraper keyStoreWraper = new KeyStoreWraper(new UnprotectedFileWraper("testOI", testDir), "private key password".toCharArray(), "Keystore password".toCharArray());
 		new KeyPairBuilder()
 			.withEndEntityName(subjectX500Name)
 			.withKeyStoreWraper(keyStoreWraper)
 			.build();
-		ContactManager contactManager = new ContactManagerImpl(keyStoreWraper, null);
-		PrivateKeyEntry privateKeyEntry = contactManager.getMainMessagePrivateKeyEntry();
+		ContactManager contactManager = new ContactManagerImpl(keyStoreWraper);
+		KeyStoreAlias keyStoreAlias = new KeyStoreAlias(null, null, null, null,
+				null, KeyStoreAlias.PurposeEnum.ME, PrivateKeyEntry.class);
+		PrivateKeyEntry privateKeyEntry = contactManager.findEntryByAlias(PrivateKeyEntry.class, keyStoreAlias);
 
 		ArrayList<X509Certificate> senderCertificateChain = new ArrayList<X509Certificate>();
 		Certificate[] certificateChain = privateKeyEntry.getCertificateChain();

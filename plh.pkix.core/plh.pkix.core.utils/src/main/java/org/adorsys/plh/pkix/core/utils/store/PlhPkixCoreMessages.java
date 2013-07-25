@@ -22,6 +22,7 @@ public interface PlhPkixCoreMessages {
 	public static final String X509CertificateBuilder_missing_inputs = "X509CertificateBuilder.missing.inputs";
 	public static final String X509CertificateBuilder_missing_subject_publicKey = "X509CertificateBuilder.missing.subjectPublicKey";
 	public static final String X509CertificateBuilder_missing_subject_DN = "X509CertificateBuilder.missing.subjectDN";
+	public static final String X509CertificateBuilder_missing_subject_unique_identifier_in_subject_DN = "X509CertificateBuilder.missing.subjectUniqueIdentifierInSubjectDN";
 	public static final String X509CertificateBuilder_missing_validity_date_notBefore = "X509CertificateBuilder.missing.validityDate.notBefore";
 	public static final String X509CertificateBuilder_missing_validity_date_notAfter = "X509CertificateBuilder.missing.validityDate.notAfter";
 	public static final String X509CertificateBuilder_issuerCert_invalid = "X509CertificateBuilder.issuerCert.invalid";

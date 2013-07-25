@@ -7,7 +7,7 @@ import java.util.List;
 import org.adorsys.plh.pkix.core.utils.KeyIdUtils;
 import org.adorsys.plh.pkix.core.utils.KeyUsageUtils;
 import org.adorsys.plh.pkix.core.utils.V3CertificateUtils;
-import org.adorsys.plh.pkix.core.utils.x500.X500NameHelper;
+import org.adorsys.plh.pkix.core.utils.X500NameHelper;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.BasicConstraints;
 import org.bouncycastle.asn1.x509.Extension;

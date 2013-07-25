@@ -2,34 +2,28 @@ package org.adorsys.plh.pkix.core.test.smime.engines;
 
 import java.io.File;
 import java.security.KeyStore.PrivateKeyEntry;
-import java.util.UUID;
 
-import org.adorsys.plh.pkix.core.smime.contact.ContactManagerImpl;
 import org.adorsys.plh.pkix.core.smime.engines.CMSPart;
 import org.adorsys.plh.pkix.core.smime.engines.CMSSigner;
 import org.adorsys.plh.pkix.core.smime.engines.CMSVerifier;
-import org.adorsys.plh.pkix.core.utils.contact.ContactManager;
-import org.adorsys.plh.pkix.core.utils.jca.KeyPairBuilder;
 import org.adorsys.plh.pkix.core.utils.store.CMSSignedMessageValidator;
-import org.adorsys.plh.pkix.core.utils.store.KeyStoreWraper;
-import org.adorsys.plh.pkix.core.utils.x500.X500NameHelper;
 import org.apache.commons.io.FileUtils;
-import org.bouncycastle.asn1.x500.X500Name;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Test;
 
 public class CMSSignerTest {
-	private X500Name subjectX500Name = X500NameHelper.makeX500Name("francis", "francis@plhtest.biz", UUID.randomUUID().toString());
+	private static final File testDir = new File("target/"+CMSSignerTest.class.getSimpleName());
+
+	@AfterClass
+	public static void cleanup(){
+		FileUtils.deleteQuietly(testDir);
+	}
 
 	@Test
 	public void test() throws Exception {
-		KeyStoreWraper keyStoreWraper = new KeyStoreWraper(null, "private key password".toCharArray(), "Keystore password".toCharArray());
-		new KeyPairBuilder()
-			.withEndEntityName(subjectX500Name)
-			.withKeyStoreWraper(keyStoreWraper)
-			.build();
-		ContactManager contactManager = new ContactManagerImpl(keyStoreWraper, null);
-		PrivateKeyEntry privateKeyEntry = contactManager.getMainMessagePrivateKeyEntry();
+		PrivateKeyEntryFactory privateKeyEntryFactory = new PrivateKeyEntryFactory(testDir);
+		PrivateKeyEntry privateKeyEntry = privateKeyEntryFactory.getPrivateKeyEntry();
 
 		File inputFile = new File("src/test/resources/rfc4210.pdf");		
 		CMSPart inputPart = CMSPart.instanceFrom(inputFile);
@@ -44,7 +38,7 @@ public class CMSSignerTest {
 		
 		CMSPart verifiedPartIn = CMSPart.instanceFrom(signedOut);
 		CMSSignedMessageValidator<CMSPart> validator = new CMSVerifier()
-			.withContactManager(contactManager)
+			.withContactManager(privateKeyEntryFactory.getContactManager())
 			.withInputPart(verifiedPartIn)
 			.readAndVerify();
 		

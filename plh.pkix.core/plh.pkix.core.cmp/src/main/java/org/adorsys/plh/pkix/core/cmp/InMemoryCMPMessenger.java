@@ -8,7 +8,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.adorsys.plh.pkix.core.utils.KeyIdUtils;
-import org.adorsys.plh.pkix.core.utils.x500.X500NameHelper;
+import org.adorsys.plh.pkix.core.utils.X500NameHelper;
 import org.bouncycastle.asn1.ASN1OctetString;
 import org.bouncycastle.asn1.DERIA5String;
 import org.bouncycastle.asn1.cmp.PKIHeader;

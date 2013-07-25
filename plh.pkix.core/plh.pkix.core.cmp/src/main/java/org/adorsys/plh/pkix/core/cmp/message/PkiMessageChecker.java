@@ -9,11 +9,11 @@ import java.util.List;
 
 import org.adorsys.plh.pkix.core.utils.BuilderChecker;
 import org.adorsys.plh.pkix.core.utils.V3CertificateUtils;
+import org.adorsys.plh.pkix.core.utils.X500NameHelper;
 import org.adorsys.plh.pkix.core.utils.contact.ContactManager;
 import org.adorsys.plh.pkix.core.utils.exception.PlhUncheckedException;
 import org.adorsys.plh.pkix.core.utils.jca.PKIXParametersFactory;
 import org.adorsys.plh.pkix.core.utils.store.PKISignedMessageValidator;
-import org.adorsys.plh.pkix.core.utils.x500.X500NameHelper;
 import org.bouncycastle.asn1.DERGeneralizedTime;
 import org.bouncycastle.asn1.cmp.PKIHeader;
 import org.bouncycastle.asn1.cmp.PKIMessage;

@@ -4,7 +4,7 @@ import java.util.List;
 
 import javax.mail.internet.AddressException;
 
-import org.adorsys.plh.pkix.core.utils.x500.X500NameHelper;
+import org.adorsys.plh.pkix.core.utils.X500NameHelper;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x500.X500NameBuilder;
 import org.bouncycastle.asn1.x500.style.BCStyle;

@@ -1,7 +1,8 @@
-package org.adorsys.plh.pkix.core.smime.contact;
+package org.adorsys.plh.pkix.core.smime.plooh;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URI;
 
 import org.adorsys.plh.pkix.core.utils.store.FileWrapper;
 import org.adorsys.plh.pkix.core.utils.store.KeyStoreWraper;
@@ -78,6 +79,12 @@ public class NullSafeFileWrapper implements FileWrapper {
 	public KeyStoreWraper getKeyStoreWraper() {
 		if(delegate!=null) return delegate.getKeyStoreWraper();
 		return null;
+	}
+
+	@Override
+	public URI getURI() {
+		if(delegate==null) return null;
+		return delegate.getURI();
 	}
 
 }

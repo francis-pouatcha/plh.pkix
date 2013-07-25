@@ -22,7 +22,8 @@ public class BuilderChecker {
 	public BuilderChecker checkNull(Object... notNullParams){
 		if(notNullParams!=null)
 			for (Object o : notNullParams) {
-				if(o==null)throw new IllegalArgumentException(builderClass.getName() + " Check builder documentation. None of the params passed to this builder checker might be null");
+				if(o==null)
+					throw new IllegalArgumentException(builderClass.getName() + " Check builder documentation. None of the params passed to this builder checker might be null");
 			}
 		return this;
 	}

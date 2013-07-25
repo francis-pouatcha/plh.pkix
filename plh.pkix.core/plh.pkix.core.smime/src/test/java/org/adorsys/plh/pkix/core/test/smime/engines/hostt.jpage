@@ -1,0 +1,15 @@
+
+String ploohHome = System.getProperty("user.home") + "/.plooh"; 
+String ploohHomeURI = new java.io.File(ploohHome).getAbsoluteFile().toURI().toString();
+
+System.out.println(new java.io.File(ploohHome).getAbsoluteFile().toURL());
+System.out.println(new java.io.File(ploohHome).getAbsoluteFile().toURI());
+
+System.out.println(new new java.net.URI(ploohHomeURI).getF);
+
+
+java.io.File ploohHomeURIFile = new java.io.File(ploohHomeURI);
+
+System.out.println("ploohHomeURIFile: " + ploohHomeURIFile.getAbsolutePath());
+
+java.io.File[] files = ploohHomeURIFile.listFiles();

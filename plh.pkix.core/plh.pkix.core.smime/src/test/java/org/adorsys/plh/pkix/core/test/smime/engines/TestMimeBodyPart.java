@@ -8,13 +8,20 @@ import java.io.InputStream;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeBodyPart;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.junit.AfterClass;
 import org.junit.Test;
 
 public class TestMimeBodyPart {
+	private static final File testDir = new File("target/"+TestMimeBodyPart.class.getSimpleName());
+
+	@AfterClass
+	public static void cleanup(){
+		FileUtils.deleteQuietly(testDir);
+	}
 	
 	@Test
 	public void testMimeBodyPart() throws IOException, MessagingException{

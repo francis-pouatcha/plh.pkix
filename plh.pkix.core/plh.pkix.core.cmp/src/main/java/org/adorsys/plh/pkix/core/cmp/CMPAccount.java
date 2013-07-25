@@ -1,8 +1,6 @@
 package org.adorsys.plh.pkix.core.cmp;
 
 import java.security.KeyStore.PrivateKeyEntry;
-import java.security.KeyStore.TrustedCertificateEntry;
-import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -17,18 +15,24 @@ import org.adorsys.plh.pkix.core.cmp.registration.RegistrationRequestInitActionP
 import org.adorsys.plh.pkix.core.cmp.stores.IncomingRequests;
 import org.adorsys.plh.pkix.core.cmp.stores.OutgoingRequests;
 import org.adorsys.plh.pkix.core.utils.action.ActionContext;
-import org.adorsys.plh.pkix.core.utils.contact.ContactListener;
 import org.adorsys.plh.pkix.core.utils.contact.ContactManager;
+import org.adorsys.plh.pkix.core.utils.plooh.PloohAccount;
 import org.adorsys.plh.pkix.core.utils.store.FileWrapper;
-import org.bouncycastle.cert.X509CertificateHolder;
 
+/**
+ * This is a wraper arround the plooh account for cmp functionality.
+ * @author fpo
+ *
+ */
 public class CMPAccount {
 
-	private ActionContext accountContext;
+	private final PloohAccount ploohAccount;
 
-	public CMPAccount(FileWrapper accountDir, ActionContext accountContext) {
-		this.accountContext = accountContext;
+	public CMPAccount(PloohAccount ploohAccount) {
+		this.ploohAccount = ploohAccount;
+		ActionContext accountContext = ploohAccount.getAccountContext();
 
+		FileWrapper accountDir = ploohAccount.getAccountDir();
 		ModuleActivators moduleActivators = new ModuleActivators(accountContext, accountDir);
 		
 		ExecutorService executors_out = Executors.newFixedThreadPool(5);
@@ -43,11 +47,15 @@ public class CMPAccount {
 		
 	}
 	
+	public PloohAccount getPloohAccount() {
+		return ploohAccount;
+	}
+
 	/**
 	 * Register's this account with the messaging server.
 	 */
 	public void registerAccount(){
-		ActionContext actionContext = new ActionContext(accountContext);
+		ActionContext actionContext = new ActionContext(ploohAccount.getAccountContext());
 		ContactManager contactManager = actionContext.get(ContactManager.class);
 		PrivateKeyEntry messagePrivateKeyEntry = contactManager.getMainMessagePrivateKeyEntry();
 
@@ -62,57 +70,16 @@ public class CMPAccount {
 	 * @param email
 	 */
 	public void sendInitializationRequest(InitializationRequestFieldHolder f) {
-		ActionContext actionContext = new ActionContext(accountContext);
+		ActionContext actionContext = new ActionContext(ploohAccount.getAccountContext());
 		actionContext.put(InitializationRequestFieldHolder.class, f);
 		OutgoingInitializationRequestInitActionProcessor actionProcessor = actionContext.get(OutgoingInitializationRequestInitActionProcessor.class);
 		actionProcessor.process(actionContext);
 	}
 	
-	public List<TrustedCertificateEntry> findContacts(String email){
-		ActionContext actionContext = new ActionContext(accountContext);
-		ContactManager contactManager = actionContext.get(ContactManager.class);
-		return contactManager.findMessageEntriesByEmail(TrustedCertificateEntry.class, email);
-	}
-	
 	public void sendCertificationRequest(CertificationRequestFieldHolder f){
-		ActionContext actionContext = new ActionContext(accountContext);
+		ActionContext actionContext = new ActionContext(ploohAccount.getAccountContext());
 		actionContext.put(CertificationRequestFieldHolder.class, f);
 		CertificationRequestInitActionProcessor actionProcessor = actionContext.get(CertificationRequestInitActionProcessor.class);
 		actionProcessor.process(actionContext);
-	}
-	
-	public PrivateKeyEntry getMainMessagePrivateKey(){
-		ActionContext actionContext = new ActionContext(accountContext);
-		ContactManager contactManager = actionContext.get(ContactManager.class);
-		return contactManager.getMainMessagePrivateKeyEntry();
-	}
-//	public PrivateKeyEntry findMessagePrivateKeyByIssuer(X509CertificateHolder issuerCertificate) {
-//		ActionContext actionContext = new ActionContext(accountContext);
-//		ContactManager contactManager = actionContext.get(ContactManager.class);
-//		return contactManager.findMessageEntryByIssuerCertificate(PrivateKeyEntry.class, issuerCertificate);
-//	}
-	
-	public TrustedCertificateEntry findCaSigningCertificateByEmail(String caEmail){
-		ActionContext actionContext = new ActionContext(accountContext);
-		ContactManager contactManager = actionContext.get(ContactManager.class);
-		return contactManager.findCaEntryByEmail(TrustedCertificateEntry.class, caEmail);
-	}
-
-	public TrustedCertificateEntry findMessagingCertificateByEmail(String caEmail){
-		ActionContext actionContext = new ActionContext(accountContext);
-		ContactManager contactManager = actionContext.get(ContactManager.class);
-		return contactManager.findMessageEntryByEmail(TrustedCertificateEntry.class, caEmail);
-	}
-
-	public void addContactListener(ContactListener contactListener){
-		ActionContext actionContext = new ActionContext(accountContext);
-		ContactManager contactManager = actionContext.get(ContactManager.class);
-		contactManager.addContactListener(contactListener);
-	}
-	
-	public List<PrivateKeyEntry> findAllMessagePrivateKeyEntriesByPublicKey(X509CertificateHolder certificateHolder){
-		ActionContext actionContext = new ActionContext(accountContext);
-		ContactManager contactManager = actionContext.get(ContactManager.class);
-		return contactManager.findEntriesByPublicKeyInfo(PrivateKeyEntry.class, certificateHolder.getSubjectPublicKeyInfo());
 	}
 }

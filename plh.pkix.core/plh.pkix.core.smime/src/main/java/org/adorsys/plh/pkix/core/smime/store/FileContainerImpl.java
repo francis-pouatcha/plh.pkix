@@ -12,6 +12,7 @@ import java.util.Arrays;
 
 import org.adorsys.plh.pkix.core.smime.engines.CMSStreamedDecryptorVerifier;
 import org.adorsys.plh.pkix.core.smime.engines.CMSStreamedSignerEncryptor;
+import org.adorsys.plh.pkix.core.smime.plooh.ContactManagerImpl;
 import org.adorsys.plh.pkix.core.smime.utils.CloseSubstreamsOutputStream;
 import org.adorsys.plh.pkix.core.utils.BuilderChecker;
 import org.adorsys.plh.pkix.core.utils.KeyIdUtils;
@@ -19,29 +20,43 @@ import org.adorsys.plh.pkix.core.utils.V3CertificateUtils;
 import org.adorsys.plh.pkix.core.utils.contact.ContactManager;
 import org.adorsys.plh.pkix.core.utils.store.FileWrapper;
 import org.adorsys.plh.pkix.core.utils.store.FilesContainer;
+import org.adorsys.plh.pkix.core.utils.store.KeyStoreWraper;
 import org.bouncycastle.cert.X509CertificateHolder;
 
 public class FileContainerImpl implements FilesContainer {
+	public static final String CONTAINER_CONTACTS_DIR_NAME="containerContacts";
 
 	private final ContactManager contactManager;
 	
 	private final PrivateKeyEntry containerPrivateKeyEntry;
+	private final ContactManager containerPrivateKeyContactManager;
 	private final File rootDirectory;
 
 
 	private final BuilderChecker checker = new BuilderChecker(FileContainerImpl.class);
-	public FileContainerImpl(ContactManager contactManager,
-			File rootDirectory) {
-		checker.checkNull(contactManager, rootDirectory);
-		this.contactManager = contactManager;
+	public FileContainerImpl(KeyStoreWraper containerKeyStoreWraper, File rootDirectory) {
+		checker.checkNull(rootDirectory);
 		this.rootDirectory = rootDirectory;
 		this.rootDirectory.mkdirs();
-		this.containerPrivateKeyEntry = contactManager.getMainMessagePrivateKeyEntry();
+
+		this.containerPrivateKeyEntry = containerKeyStoreWraper.getMainMessagePrivateKeyEntry();
+		if(containerPrivateKeyEntry==null)throw new IllegalStateException("Container not authenticated.");
+		this.containerPrivateKeyContactManager = new ContactManagerImpl(containerKeyStoreWraper);
+		
+		FileWrapper containerContactDir = newRelativeFile(CONTAINER_CONTACTS_DIR_NAME);
+		contactManager = new ContactManagerImpl(containerContactDir);
+		
 	}
 
 	@Override
-	public FileWrapper newFile(String fileRelativePath) {
+	public FileWrapper newRelativeFile(String fileRelativePath) {
 		return new FileWraperImpl(fileRelativePath, rootDirectory, this);
+	}
+
+	@Override
+	public FileWrapper newAbsoluteFile(String fileAbsolutePath) {
+		File file = new File(fileAbsolutePath);
+		return new FileWraperImpl(file.getName(), file.getParentFile(), this);
 	}
 
 	public CMSStreamedDecryptorVerifier newDecryptor(File file) {
@@ -52,7 +67,7 @@ public class FileContainerImpl implements FilesContainer {
 			throw new IllegalStateException(e);
 		}
 		return new CMSStreamedDecryptorVerifier()
-			.withContactManager(contactManager)
+			.withContactManager(containerPrivateKeyContactManager)
 			.withInputStream(signedEncryptedInputStream);
 	}
 
@@ -79,4 +94,21 @@ public class FileContainerImpl implements FilesContainer {
 		X509CertificateHolder certHldr = V3CertificateUtils.getX509CertificateHolder(containerPrivateKeyEntry.getCertificate());
 		return KeyIdUtils.createPublicKeyIdentifierAsString(certHldr);
 	}
+
+	@Override
+	public X509CertificateHolder getX509CertificateHolder() {
+		return V3CertificateUtils.getX509CertificateHolder(containerPrivateKeyEntry.getCertificate());
+	}
+
+	@Override
+	public ContactManager getTrustedContactManager() {
+		return contactManager;
+	}
+
+	@Override
+	public ContactManager getPrivateContactManager() {
+		return containerPrivateKeyContactManager;
+	}
+
+
 }

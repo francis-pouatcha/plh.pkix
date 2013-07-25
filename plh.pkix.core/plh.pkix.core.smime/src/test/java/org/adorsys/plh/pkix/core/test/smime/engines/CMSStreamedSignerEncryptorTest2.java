@@ -7,36 +7,30 @@ import java.io.OutputStream;
 import java.security.KeyStore.PrivateKeyEntry;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
-import java.util.UUID;
 
-import org.adorsys.plh.pkix.core.smime.contact.ContactManagerImpl;
 import org.adorsys.plh.pkix.core.smime.engines.CMSPart;
 import org.adorsys.plh.pkix.core.smime.engines.CMSSignerEncryptor;
 import org.adorsys.plh.pkix.core.smime.engines.CMSStreamedSignerEncryptor;
 import org.adorsys.plh.pkix.core.utils.V3CertificateUtils;
-import org.adorsys.plh.pkix.core.utils.contact.ContactManager;
-import org.adorsys.plh.pkix.core.utils.jca.KeyPairBuilder;
-import org.adorsys.plh.pkix.core.utils.store.KeyStoreWraper;
-import org.adorsys.plh.pkix.core.utils.x500.X500NameHelper;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.cert.X509CertificateHolder;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Test;
 
 public class CMSStreamedSignerEncryptorTest2 {
-	private X500Name subjectX500Name = X500NameHelper.makeX500Name("francis", "francis@plhtest.biz", UUID.randomUUID().toString());
+	private static final File testDir = new File("target/"+CMSStreamedSignerEncryptorTest2.class.getSimpleName());
+
+	@AfterClass
+	public static void cleanup(){
+		FileUtils.deleteQuietly(testDir);
+	}
 
 	@Test
 	public void test() throws Exception {
-		KeyStoreWraper keyStoreWraper = new KeyStoreWraper(null, "private key password".toCharArray(), "Keystore password".toCharArray());
-		new KeyPairBuilder()
-			.withEndEntityName(subjectX500Name)
-			.withKeyStoreWraper(keyStoreWraper)
-			.build();
-		ContactManager contactManager = new ContactManagerImpl(keyStoreWraper, null);
-		PrivateKeyEntry privateKeyEntry = contactManager.getMainMessagePrivateKeyEntry();
+		PrivateKeyEntryFactory privateKeyEntryFactory = new PrivateKeyEntryFactory(testDir);
+		PrivateKeyEntry privateKeyEntry = privateKeyEntryFactory.getPrivateKeyEntry();
 		X509CertificateHolder subjectCertificate = new X509CertificateHolder(privateKeyEntry.getCertificate().getEncoded());
 		X509Certificate x509Certificate = V3CertificateUtils.getX509JavaCertificate(subjectCertificate);
 		

@@ -5,8 +5,8 @@ import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
+import org.adorsys.plh.pkix.core.utils.X500NameHelper;
 import org.adorsys.plh.pkix.core.utils.contact.ContactListener;
-import org.adorsys.plh.pkix.core.utils.x500.X500NameHelper;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.cert.X509CertificateHolder;
 

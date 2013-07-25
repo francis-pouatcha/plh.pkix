@@ -12,6 +12,7 @@ import org.adorsys.plh.pkix.core.utils.BuilderChecker;
 import org.adorsys.plh.pkix.core.utils.KeyUsageUtils;
 import org.adorsys.plh.pkix.core.utils.UUIDUtils;
 import org.adorsys.plh.pkix.core.utils.V3CertificateUtils;
+import org.adorsys.plh.pkix.core.utils.X500NameHelper;
 import org.adorsys.plh.pkix.core.utils.exception.PlhUncheckedValidationException;
 import org.adorsys.plh.pkix.core.utils.store.PlhPkixCoreMessages;
 import org.bouncycastle.asn1.x500.X500Name;
@@ -96,6 +97,8 @@ public class X509CertificateBuilder {
 		if(subjectDN==null) errorKeys.add(PlhPkixCoreMessages.X509CertificateBuilder_missing_subject_DN);
 		if(notBefore==null) errorKeys.add(PlhPkixCoreMessages.X509CertificateBuilder_missing_validity_date_notBefore);
 		if(notAfter==null) errorKeys.add(PlhPkixCoreMessages.X509CertificateBuilder_missing_validity_date_notAfter);
+		String subjectUniqueIdentifier = X500NameHelper.readUniqueIdentifier(subjectDN);
+		if(subjectUniqueIdentifier==null) errorKeys.add(PlhPkixCoreMessages.X509CertificateBuilder_missing_subject_unique_identifier_in_subject_DN);
 		if(!errorKeys.isEmpty()){
 			List<ErrorBundle> errors = new ArrayList<ErrorBundle>();
             ErrorBundle haedMsg = new ErrorBundle(PlhPkixCoreMessages.class.getName(),
@@ -107,6 +110,7 @@ public class X509CertificateBuilder {
 			}
             throw new PlhUncheckedValidationException(errors);
 		}
+
 
 		X500Name issuerDN = null;
 		BasicConstraints basicConstraints = null;

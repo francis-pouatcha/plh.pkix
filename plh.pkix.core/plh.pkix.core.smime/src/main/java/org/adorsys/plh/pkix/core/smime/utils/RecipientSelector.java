@@ -44,7 +44,8 @@ public class RecipientSelector {
             if(privateKeyEntry!=null || secretKeyEntry!=null) break;
 		}
 
-        if(recipientInformation==null || (privateKeyEntry==null && secretKeyEntry==null)) throw new SecurityException("No matching private key or secret key found for recipients of this file");
+        if(recipientInformation==null || (privateKeyEntry==null && secretKeyEntry==null)) 
+        	throw new SecurityException("No matching private key or secret key found for recipients of this file");
         
         Recipient recipient = null;
         if(privateKeyEntry!=null){

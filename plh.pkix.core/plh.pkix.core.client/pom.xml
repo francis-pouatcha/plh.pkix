@@ -1,0 +1,29 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.adorsys.plh</groupId>
+    <artifactId>plh.pkix.core</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+  </parent>
+  <artifactId>plh.pkix.core.client</artifactId>
+  <name>Plooh Core Client</name>
+  <description>Plooh Core Client</description>
+
+  <dependencies>
+  	<dependency>
+		<groupId>org.adorsys.plh</groupId>
+		<artifactId>plh.pkix.core.utils</artifactId>
+		<version>${project.version}</version>
+  	</dependency>
+ 	<dependency>
+		<groupId>org.adorsys.plh</groupId>
+		<artifactId>plh.pkix.core.smime</artifactId>
+		<version>${project.version}</version>
+  	</dependency>
+ 	<dependency>
+		<groupId>org.adorsys.plh</groupId>
+		<artifactId>plh.pkix.core.cmp</artifactId>
+		<version>${project.version}</version>
+  	</dependency>
+  </dependencies>  
+</project>

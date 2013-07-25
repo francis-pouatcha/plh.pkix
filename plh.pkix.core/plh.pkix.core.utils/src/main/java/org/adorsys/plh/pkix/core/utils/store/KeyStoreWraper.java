@@ -18,14 +18,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
-import java.util.UUID;
 
+import org.adorsys.plh.pkix.core.utils.BuilderChecker;
 import org.adorsys.plh.pkix.core.utils.KeyStoreAlias;
 import org.adorsys.plh.pkix.core.utils.ProviderUtils;
 import org.adorsys.plh.pkix.core.utils.V3CertificateUtils;
+import org.adorsys.plh.pkix.core.utils.X500NameHelper;
 import org.adorsys.plh.pkix.core.utils.exception.PlhCheckedException;
 import org.adorsys.plh.pkix.core.utils.exception.PlhUncheckedException;
-import org.adorsys.plh.pkix.core.utils.x500.X500NameHelper;
 import org.apache.commons.io.IOUtils;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.Certificate;
@@ -51,7 +51,9 @@ public class KeyStoreWraper {
 	private char[] keyPass;
 	private ProtectionParameter protParam;
 	
+	BuilderChecker checker = new BuilderChecker(KeyStoreWraper.class);
 	public KeyStoreWraper(FileWrapper keyStoreFile, char[] keyPass, char[] storePass) {
+		checker.checkNull(keyStoreFile, storePass);
 		this.keyStore = KeyStoreWraperUtils.instance(storePass);
 		this.keyStoreFile = keyStoreFile;
 		this.keyPass = keyPass;
@@ -62,6 +64,10 @@ public class KeyStoreWraper {
 			KeyStoreWraperUtils.load(keyStoreFile, keyStore, storePass);
 	}
 	
+	public String getKeyStoreId() {
+		return keyStoreFile.getName();
+	}
+
 	/**
 	 * Set the key pass
 	 * @param keyPass
@@ -91,33 +97,6 @@ public class KeyStoreWraper {
 				}
 			}
 			return null;
-		} catch (KeyStoreException e){
-            ErrorBundle msg = new ErrorBundle(PlhPkixCoreMessages.class.getName(),
-            		PlhPkixCoreMessages.KeyStoreWraper_certImport_keystoreException,
-                    new Object[] { e.getMessage(), e , e.getClass().getName()});
-            throw new PlhUncheckedException(msg, e);
-		}
-	}
-
-	@SuppressWarnings("unchecked")
-	public <T extends Entry> List<T> findMessageEntriesByEmail(Class<T> klass,
-			String... emails) {
-		try {
-			Enumeration<String> aliases = keyStore.aliases();
-			List<T> result = new ArrayList<T>();
-			while (aliases.hasMoreElements()) {
-				String alias = (String) aliases.nextElement();
-				Entry entry = getEntry(alias);
-				if(entry==null) continue;
-				if(entry.getClass()!=klass)continue;
-				java.security.cert.Certificate certificate = keyStore.getCertificate(alias);
-				if(!V3CertificateUtils.isSmimeKey(certificate)) continue;
-				List<String> subjectEmails = X500NameHelper.readSubjectEmails(certificate);
-				for (String email : emails) {
-					if(subjectEmails.contains(email)) result .add((T)entry); 
-				}
-			}
-			return result;
 		} catch (KeyStoreException e){
             ErrorBundle msg = new ErrorBundle(PlhPkixCoreMessages.class.getName(),
             		PlhPkixCoreMessages.KeyStoreWraper_certImport_keystoreException,
@@ -555,11 +534,14 @@ public class KeyStoreWraper {
 		}
 	}
 	
-	private String randomId = null;
-	public String getId(){
-		if(keyStoreFile!=null)
-			return keyStoreFile.getName();
-		if(randomId!=null) return randomId;
-		return randomId=UUID.randomUUID().toString();
+	public PrivateKeyEntry getMainMessagePrivateKeyEntry() {
+		List<KeyStoreAlias> keyStoreAliases = keyStoreAliases();
+		for (KeyStoreAlias keyStoreAlias : keyStoreAliases) {
+			if(keyStoreAlias.isEntryType(PrivateKeyEntry.class)) {
+				PrivateKeyEntry privateKeyEntry = findEntryByAlias(PrivateKeyEntry.class, keyStoreAlias);
+				if(V3CertificateUtils.isSmimeKey(privateKeyEntry.getCertificate())) return privateKeyEntry;
+			}
+		}
+		return null;
 	}
 }

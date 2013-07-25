@@ -7,7 +7,7 @@ import java.util.List;
 import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
 
-import org.adorsys.plh.pkix.core.utils.x500.X500NameHelper;
+import org.adorsys.plh.pkix.core.utils.X500NameHelper;
 import org.apache.commons.lang3.StringUtils;
 import org.bouncycastle.i18n.ErrorBundle;
 

@@ -142,7 +142,7 @@ public class KeyStoreWraperUtils {
 		List<X509CertificateHolder> certWithCa = new ArrayList<X509CertificateHolder>();
 		for (X509CertificateHolder x509CertificateHolder : certificates) {
 			String caSubjectKeyId = KeyIdUtils.readAuthorityKeyIdentifierAsString(x509CertificateHolder);
-			KeyStoreAlias keyStoreAlias = new KeyStoreAlias(null, caSubjectKeyId, null, null,null);
+			KeyStoreAlias keyStoreAlias = new KeyStoreAlias(null,null, caSubjectKeyId, null, null,null,null);
 			List<KeyStoreAlias> cas = KeyStoreAlias.select(aliasEnum, keyStoreAlias);
 			if(cas.isEmpty())certWithCa.add(x509CertificateHolder);
 		}

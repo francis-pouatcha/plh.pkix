@@ -3,6 +3,7 @@ package org.adorsys.plh.pkix.core.smime.store;
 import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URI;
 
 import org.adorsys.plh.pkix.core.smime.engines.CMSStreamedDecryptorVerifier;
 import org.adorsys.plh.pkix.core.utils.store.FileWrapper;
@@ -90,7 +91,7 @@ public class FileWraperImpl implements FileWrapper{
 	public FileWrapper newChild(String name) {
 		return new FileWraperImpl(name, file, container);
 	}
-
+	
 	private KeyStoreWraper keyStoreWraper;
 	/**
 	 * 
@@ -111,6 +112,11 @@ public class FileWraperImpl implements FileWrapper{
 	@Override
 	public String toString() {
 		return "FileWraperImpl [file=" + file + "]";
+	}
+
+	@Override
+	public URI getURI() {
+		return file.toURI();
 	}
 	
 	

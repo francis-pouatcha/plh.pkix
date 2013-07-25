@@ -2,24 +2,29 @@ package org.adorsys.plh.pkix.core.test.smime.contact;
 
 import java.io.File;
 import java.security.KeyStore.PrivateKeyEntry;
+import java.security.KeyStore.TrustedCertificateEntry;
 import java.security.KeyStoreException;
 import java.security.cert.CertificateException;
 import java.util.List;
-import java.util.Set;
+import java.util.Properties;
 
-import org.adorsys.plh.pkix.core.smime.contact.AccountManager;
-import org.adorsys.plh.pkix.core.smime.contact.AccountManagerFactory;
+import org.adorsys.plh.pkix.core.smime.plooh.SelectedDirNotEmptyException;
+import org.adorsys.plh.pkix.core.smime.plooh.SelectedFileNotADirectoryException;
+import org.adorsys.plh.pkix.core.smime.plooh.SimpleKeyStorePasswordsCallbackHandler;
+import org.adorsys.plh.pkix.core.smime.plooh.UserAccount;
+import org.adorsys.plh.pkix.core.smime.plooh.UserDevice;
+import org.adorsys.plh.pkix.core.utils.KeyStoreAlias;
 import org.adorsys.plh.pkix.core.utils.V3CertificateUtils;
 import org.adorsys.plh.pkix.core.utils.contact.ContactManager;
 import org.adorsys.plh.pkix.core.utils.exception.PlhCheckedException;
-import org.adorsys.plh.pkix.core.utils.store.FilesContainer;
 import org.apache.commons.io.FileUtils;
+import org.bouncycastle.cert.X509CertificateHolder;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Test;
 
 public class ContactIndexTest {
-	private static final File testDir = new File("target/ContactIndexTest");
+	private static final File testDir = new File("target/"+ContactIndexTest.class.getSimpleName());
 	
 	@AfterClass
 	public static void cleanup(){
@@ -28,37 +33,54 @@ public class ContactIndexTest {
 	
 	
 	@Test
-	public void test() throws CertificateException, KeyStoreException, PlhCheckedException {
+	public void test() throws CertificateException, KeyStoreException, PlhCheckedException, SelectedFileNotADirectoryException, SelectedDirNotEmptyException {
 		
-		// 1. Generate key pair
-		FilesContainer francisFilesContainer = AccountManagerFactory.createFilesContainer(new File(testDir, "francis"), "Francis Pouatcha Container Key Pass".toCharArray(), "Francis Pouatcha Container Store Pass".toCharArray());
-		AccountManager francisContactManager = AccountManagerFactory.createAccountManager(francisFilesContainer, "francisAccount", "Francis Pouatcha", "fpo@biz.com", "francis key pass".toCharArray());
+		// francis
+		UserAccount francisUserAccount = newUserAccount("francis");
 		
-		FilesContainer nadegeFilesContainer = AccountManagerFactory.createFilesContainer(new File(testDir, "nadege"), "Nadege Pouatcha Container Key Pass".toCharArray(), "Nadege Pouatcha Container Store Pass".toCharArray());
-		AccountManager nadegeContactManager = AccountManagerFactory.createAccountManager(nadegeFilesContainer, "nadegeAccount", "Nadege Pouatcha", "npa@biz.com", "nadege key pass".toCharArray());
-		
-		FilesContainer sandroFilesContainer = AccountManagerFactory.createFilesContainer(new File(testDir, "sandro"), "Sandro Sonntag Container Key Pass".toCharArray(), "Sandro Sonntag Container Store Pass".toCharArray());
-		AccountManager sandroContactManager = AccountManagerFactory.createAccountManager(sandroFilesContainer, "sandroAccount", "Sandro Sonntag", "sso@biz.com", "sandro key pass".toCharArray());
-		
-		PrivateKeyEntry nadegePrivateKeyEntry = nadegeContactManager.getAccountContext().get(ContactManager.class).getMainMessagePrivateKeyEntry();
-		PrivateKeyEntry sandroPrivateKeyEntry = sandroContactManager.getAccountContext().get(ContactManager.class).getMainMessagePrivateKeyEntry();
-		francisContactManager.getAccountContext().get(ContactManager.class).addCertEntry(V3CertificateUtils.getX509CertificateHolder(nadegePrivateKeyEntry.getCertificate()));
-		francisContactManager.getAccountContext().get(ContactManager.class).addCertEntry(V3CertificateUtils.getX509CertificateHolder(sandroPrivateKeyEntry.getCertificate()));
+		// nadege
+		UserAccount nadegeUserAccount = newUserAccount("nadege");
 
-		francisFilesContainer = AccountManagerFactory.loadFilesContainer(new File(testDir, "francis"), "Francis Pouatcha Container Key Pass".toCharArray(), "Francis Pouatcha Container Store Pass".toCharArray());
-		List<AccountManager> loadedAccountManagers = AccountManagerFactory.loadAccountManagers(francisFilesContainer);
-		Assert.assertTrue(loadedAccountManagers.size()==1);
-		AccountManager accountManager = loadedAccountManagers.get(0);
+		// sandro
+		UserAccount sandroUserAccount = newUserAccount("sandro");
 
-		boolean authenticated = accountManager.getContactManager().isAuthenticated();
-		Assert.assertFalse(authenticated);
-		accountManager.getContactManager().login("francis key pass".toCharArray());
-		authenticated = accountManager.getContactManager().isAuthenticated();
-		Assert.assertTrue(authenticated);
-		
-		Set<String> francisContacts = francisContactManager.getContactManager().listContacts();
-		Assert.assertTrue(francisContacts.contains("npa@biz.com"));
-		Assert.assertTrue(francisContacts.contains("sso@biz.com"));
+		PrivateKeyEntry nadegePrivateKeyEntry = nadegeUserAccount.getPrivateContactManager().findEntryByAlias(PrivateKeyEntry.class, new KeyStoreAlias(null, null, null, null, null, KeyStoreAlias.PurposeEnum.ME, PrivateKeyEntry.class));
+		PrivateKeyEntry sandroPrivateKeyEntry = sandroUserAccount.getPrivateContactManager().findEntryByAlias(PrivateKeyEntry.class, new KeyStoreAlias(null, null, null, null, null, KeyStoreAlias.PurposeEnum.ME, PrivateKeyEntry.class));
 
+		francisUserAccount.getTrustedContactManager().addCertEntry(V3CertificateUtils.getX509CertificateHolder(nadegePrivateKeyEntry.getCertificate()));
+		francisUserAccount.getTrustedContactManager().addCertEntry(V3CertificateUtils.getX509CertificateHolder(sandroPrivateKeyEntry.getCertificate()));
+
+		francisUserAccount = loadUserAccount("francis");
+
+		ContactManager francisTrustedContactManager = francisUserAccount.getTrustedContactManager();
+		List<KeyStoreAlias> keyStoreAliases = francisTrustedContactManager.keyStoreAliases();
+		List<TrustedCertificateEntry> francisContacts = francisTrustedContactManager.findEntriesByAlias(TrustedCertificateEntry.class, keyStoreAliases);
+		Assert.assertNotNull(francisContacts);
 	}
+	
+	private static UserAccount newUserAccount(String name) throws SelectedFileNotADirectoryException, SelectedDirNotEmptyException{
+		UserDevice device = loadUserDevice(name);
+		return device.createUserAccount(new File(testDir, "accountDirs/"+name+"Account"));
+		
+	}
+	
+	private static UserAccount loadUserAccount(String name) throws SelectedFileNotADirectoryException, SelectedDirNotEmptyException{
+		UserDevice device = loadUserDevice(name);
+		List<X509CertificateHolder> accounts = device.getAccounts();
+		X509CertificateHolder accountCertificateHolder = accounts.iterator().next();
+		return device.loadUserAccount(accountCertificateHolder);
+		
+	}
+	
+	private static UserDevice loadUserDevice(String name) throws SelectedFileNotADirectoryException, SelectedDirNotEmptyException{
+		// nadege
+		Properties properties = new Properties();
+		properties.put(UserDevice.SYSTEM_PROPERTY_KEY_USER_HOME, new File(testDir, name+"Device").getPath());
+		properties.put(UserDevice.SYSTEM_PROPERTY_KEY_USER_NAME, name);
+		SimpleKeyStorePasswordsCallbackHandler deviceCallBackHandler = new SimpleKeyStorePasswordsCallbackHandler(
+				(name +"Container Key Pass").toCharArray(), 
+				(name+"Container Store Pass").toCharArray());
+		return new UserDevice(deviceCallBackHandler, properties);
+	}
+	
 }

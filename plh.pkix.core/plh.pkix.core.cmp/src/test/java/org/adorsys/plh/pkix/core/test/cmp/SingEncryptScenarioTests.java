@@ -10,7 +10,6 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
 import org.adorsys.plh.pkix.core.cmp.CMPAccount;
-import org.adorsys.plh.pkix.core.cmp.CMPandCMSClient;
 import org.adorsys.plh.pkix.core.cmp.InMemoryCMPMessenger;
 import org.adorsys.plh.pkix.core.cmp.certrequest.endentity.CertificationRequestFieldHolder;
 import org.adorsys.plh.pkix.core.cmp.initrequest.sender.InitializationRequestFieldHolder;
@@ -29,19 +28,33 @@ public class SingEncryptScenarioTests {
 
 	static final String srcFile1 = "src/test/resources/rfc4210.pdf";
 	static final String srcFile2 = "src/test/resources/rfc5652CMS.pdf";
+
 	
-	static File workspaceDir = new File("target/SingEncryptScenarioTests/testTimAndAlex");
-	
+	InMemoryCMPMessenger cmpMessenger = null;
+
+	static File workspaceParentDir = new File("target/"+SingEncryptScenarioTests.class.getSimpleName());
+
 	@BeforeClass
 	@AfterClass
-	public static void cleanUp(){
-		FileUtils.deleteQuietly(workspaceDir);
+	public static void afterClass(){
+		FileUtils.deleteQuietly(workspaceParentDir);
+	}
+
+	@Test
+	public void testTimAndAlex2() throws IOException {
+		File workspaceDir = new File(workspaceParentDir, "testTimAndAlex2");;
+		cmpMessenger = new LeakingCMPMessenger(workspaceDir);
+		testTimAndAlexIntern(workspaceDir);
 	}
 	
 	@Test
 	public void testTimAndAlex() throws IOException {
-		
-		InMemoryCMPMessenger cmpMessenger = new InMemoryCMPMessenger();
+		File workspaceDir = new File(workspaceParentDir, "testTimAndAlex");;
+		cmpMessenger = new InMemoryCMPMessenger();
+		testTimAndAlexIntern(workspaceDir);
+	}
+	
+	private void testTimAndAlexIntern(File workspaceDir) throws IOException {
 		BlockingQueue<String> endPointQueue = new ArrayBlockingQueue<String>(100);
 		// collect registered endpoints into the given blocking queue.
 		SmpleRegisterMessageEndpointListener eendPointListener = new SmpleRegisterMessageEndpointListener(endPointQueue);
@@ -52,29 +65,29 @@ public class SingEncryptScenarioTests {
 		
 		String certAUthEmail = "certauth@adorsys.com";
 		registeringClients.add(certAUthEmail);
-		CMPandCMSClient certAuthClient = new CMPandCMSClient(cmpMessenger, workspaceDir, 
+		CMPClient certAuthClient = new CMPClient(cmpMessenger, workspaceDir, 
 				"certAuthComputer", "certAuthContainerKeyPass".toCharArray(), "certAuthContainerStorePass".toCharArray());
 		CMPAccount certAuthAccount = certAuthClient.newAccount("Adorsys Certification Authority", certAUthEmail, "certAuthAccountPassword".toCharArray());
 		BlockingContactListener certAuthBlockingContactListener = new BlockingContactListener();
-		certAuthAccount.addContactListener(certAuthBlockingContactListener);
+		certAuthAccount.getPloohAccount().addContactListener(certAuthBlockingContactListener);
 		certAuthAccount.registerAccount();
 
 		String timEmail = "tim@adorsys.com";
 		registeringClients.add(timEmail);
-		CMPandCMSClient timClient = new CMPandCMSClient(cmpMessenger, workspaceDir, 
+		CMPClient timClient = new CMPClient(cmpMessenger, workspaceDir, 
 				"timsComputer", "timsContainerKeyPass".toCharArray(), "timsContainerStorePass".toCharArray());
 		CMPAccount timsAccount = timClient.newAccount("Tim Tester", timEmail, "TimsAccountPassword".toCharArray());
 		BlockingContactListener timBlockingContactListener = new BlockingContactListener();
-		timsAccount.addContactListener(timBlockingContactListener);
+		timsAccount.getPloohAccount().addContactListener(timBlockingContactListener);
 		timsAccount.registerAccount();
 
 		String alexEmail = "alex@adorsys.com";
 		registeringClients.add(alexEmail);
-		CMPandCMSClient alexClient = new CMPandCMSClient(cmpMessenger, workspaceDir, 
+		CMPClient alexClient = new CMPClient(cmpMessenger, workspaceDir, 
 				"alexesComputer", "alexesContainerKeyPass".toCharArray(), "alexesContainerStorePass".toCharArray());
 		CMPAccount alexesAccount = alexClient.newAccount("Alex Tester", alexEmail, "AlexesAccountPassword".toCharArray());
 		BlockingContactListener alexesBlockingContactListener = new BlockingContactListener();
-		alexesAccount.addContactListener(alexesBlockingContactListener);
+		alexesAccount.getPloohAccount().addContactListener(alexesBlockingContactListener);
 		alexesAccount.registerAccount();
 		
 		// Main thread waits till all client are propertly registered.
@@ -97,21 +110,21 @@ public class SingEncryptScenarioTests {
 		// initialization request
 		timsAccount.sendInitializationRequest(f);
 		timBlockingContactListener.waitForContacts();
-		List<TrustedCertificateEntry> timContacts = timsAccount.findContacts(certAUthEmail);
+		List<TrustedCertificateEntry> timContacts = timsAccount.getPloohAccount().findContacts(certAUthEmail);
 		Assert.assertNotNull(timContacts);
 		if(timContacts.size()<2){
 			timBlockingContactListener.expectContact(certAUthEmail);
 			timBlockingContactListener.waitForContacts();
 		}
-		timContacts = timsAccount.findContacts(certAUthEmail);
+		timContacts = timsAccount.getPloohAccount().findContacts(certAUthEmail);
 		Assert.assertEquals(1, timContacts.size());
 		
 		
-		PrivateKeyEntry timMainMessagePrivateKey = timsAccount.getMainMessagePrivateKey();
+		PrivateKeyEntry timMainMessagePrivateKey = timsAccount.getPloohAccount().getMainMessagePrivateKey();
 		CertificationRequestFieldHolder crf = new CertificationRequestFieldHolder(timMainMessagePrivateKey);
 		
-		TrustedCertificateEntry certAuthCaCertificate = timsAccount.findCaSigningCertificateByEmail(certAUthEmail);
-		TrustedCertificateEntry certAuthMessagingCertificate = timsAccount.findMessagingCertificateByEmail(certAUthEmail);
+		TrustedCertificateEntry certAuthCaCertificate = timsAccount.getPloohAccount().findCaSigningCertificateByEmail(certAUthEmail);
+		TrustedCertificateEntry certAuthMessagingCertificate = timsAccount.getPloohAccount().findMessagingCertificateByEmail(certAUthEmail);
 	
 		X509CertificateHolder certAuthorityCaCertHolder = V3CertificateUtils.getX509CertificateHolder(certAuthCaCertificate.getTrustedCertificate());
 		crf.setCertAuthorityName(certAuthorityCaCertHolder.getSubject());
@@ -124,7 +137,7 @@ public class SingEncryptScenarioTests {
 		
 		
 		X509CertificateHolder timSampleCertificate = V3CertificateUtils.getX509CertificateHolder(timMainMessagePrivateKey.getCertificate());
-		List<PrivateKeyEntry> timKeyEntries = timsAccount.findAllMessagePrivateKeyEntriesByPublicKey(timSampleCertificate);
+		List<PrivateKeyEntry> timKeyEntries = timsAccount.getPloohAccount().findAllMessagePrivateKeyEntriesByPublicKey(timSampleCertificate);
 		PrivateKeyEntry certifiedPrivateKeyEntry = null;
 		for (PrivateKeyEntry privateKeyEntry : timKeyEntries) {
 			X509CertificateHolder certHolder = V3CertificateUtils.getX509CertificateHolder(privateKeyEntry.getCertificate());
@@ -138,81 +151,5 @@ public class SingEncryptScenarioTests {
 		Assert.assertNotNull(certifiedPrivateKeyEntry);
 		
 	}		
-	
-//		String caCN="certAuth@plpkixhtest.biz";
-//		CMPandCMSClient caClient = new CMPandCMSClient(clients);
-//		caClient.register("certAuth", caCN);
-//
-//		String timCN = "tim@plpkixhtest.biz";
-//		CMPandCMSClient timClient = new CMPandCMSClient(clients);
-//		timClient.register("tim", timCN);
-//		timClient.requestCertification(caCN);
-//
-//		String alexCN = "alex@plpkixhtest.biz";
-//		CMPandCMSClient alexClient = new CMPandCMSClient(clients);
-//		alexClient.register("alex", alexCN);
-//		alexClient.requestCertification(caCN);
-//		
-//		// certificate exchange
-//		alexClient.fetchCertificate(timCN, caCN);
-//		timClient.fetchCertificate(alexCN, caCN);
-//		
-//		
-//		File fileSentByTim = new File(srcFile1);
-//		InputStream sentInputStream = new FileInputStream(srcFile1);
-//		String fileSentByTimToAlexName = "target/"+fileSentByTim.getName()+".sentByTimToAlex.signed.encrypted";
-//		File fileSentByTimToAlex = new File(fileSentByTimToAlexName);
-//		OutputStream sentOutputStream = new FileOutputStream(fileSentByTimToAlex );
-//		timClient.sendFile(caCN,sentInputStream, sentOutputStream, alexCN);
-//		IOUtils.closeQuietly(sentInputStream);
-//		IOUtils.closeQuietly(sentOutputStream);
-//		
-//		InputStream recievedInputStream = new FileInputStream(fileSentByTimToAlexName);
-//		File fileRecievedByAlexFromTim = new File("target/"+fileSentByTim.getName()+".recievedByAlexFromTim.decrypted.verified");
-//		OutputStream recivedOutputStream = new FileOutputStream(fileRecievedByAlexFromTim);
-//		alexClient.receiveFile(recievedInputStream, recivedOutputStream);
-//		IOUtils.closeQuietly(recievedInputStream);
-//		IOUtils.closeQuietly(recivedOutputStream);
-//	
-//		boolean contentEquals = FileUtils.contentEquals(
-//				new File(srcFile1), 
-//				new File(fileRecievedByAlexFromTim.getAbsolutePath()));
-//		Assert.assertTrue(contentEquals);
-//	}
-//
-//
-//	@Test
-//	public void testTimAndTim() throws IOException {
-//		ClientMap clients = new ClientMap();
-//		String caCN="certAuth@plpkixhtest.biz";
-//		CMPandCMSClient caClient = new CMPandCMSClient(clients);
-//		caClient.register("certAuth", caCN);
-//
-//		String timCN = "tim@plpkixhtest.biz";
-//		CMPandCMSClient timClient = new CMPandCMSClient(clients);
-//		timClient.register("tim", timCN);
-//		timClient.requestCertification(caCN);
-//		
-//		File fileSentByTim = new File(srcFile1);
-//		InputStream sentInputStream = new FileInputStream(srcFile1);
-//		String fileSentByTimToTimName = "target/"+fileSentByTim.getName()+".sentByTimToTim.signed.encrypted";
-//		File fileSentByTimToTim = new File(fileSentByTimToTimName);
-//		OutputStream sentOutputStream = new FileOutputStream(fileSentByTimToTim );
-//		timClient.sendFile(caCN,sentInputStream, sentOutputStream, timCN);
-//		IOUtils.closeQuietly(sentInputStream);
-//		IOUtils.closeQuietly(sentOutputStream);
-//		
-//		InputStream recievedInputStream = new FileInputStream(fileSentByTimToTimName);
-//		String fileRecievedByTimFromTimName = "target/"+fileSentByTim.getName()+".recievedByTimFromTim.decrypted.verified";
-//		File  fileRecievedByTimFromTim = new File(fileRecievedByTimFromTimName);
-//		OutputStream recivedOutputStream = new FileOutputStream(fileRecievedByTimFromTim);
-//		timClient.receiveFile(recievedInputStream, recivedOutputStream);
-//		IOUtils.closeQuietly(recievedInputStream);
-//		IOUtils.closeQuietly(recivedOutputStream);
-//	
-//		boolean contentEquals = FileUtils.contentEquals(
-//				new File(srcFile1), 
-//				new File(fileRecievedByTimFromTim.getAbsolutePath()));
-//		Assert.assertTrue(contentEquals);
-//	}
+
 }
