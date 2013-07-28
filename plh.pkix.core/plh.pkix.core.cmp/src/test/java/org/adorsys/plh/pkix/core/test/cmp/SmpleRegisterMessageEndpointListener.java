@@ -17,8 +17,8 @@ public class SmpleRegisterMessageEndpointListener implements
 
 
 	@Override
-	public void newMessageEndpoint(String email) {
-		endPointQueue.offer(email);
+	public void newMessageEndpoint(String publicKeyIdHex) {
+		endPointQueue.offer(publicKeyIdHex);
 	}
 
 }

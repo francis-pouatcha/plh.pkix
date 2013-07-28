@@ -3,20 +3,24 @@ package org.adorsys.plh.pkix.core.cmp.certrequest.ca;
 import java.security.KeyStore.PrivateKeyEntry;
 import java.security.PublicKey;
 import java.security.cert.Certificate;
+import java.util.List;
 
 import org.adorsys.plh.pkix.core.cmp.utils.OptionalValidityHolder;
+import org.adorsys.plh.pkix.core.smime.plooh.UserAccount;
 import org.adorsys.plh.pkix.core.utils.BuilderChecker;
+import org.adorsys.plh.pkix.core.utils.KeyIdUtils;
+import org.adorsys.plh.pkix.core.utils.KeyStoreAlias;
+import org.adorsys.plh.pkix.core.utils.KeyStoreAlias.PurposeEnum;
 import org.adorsys.plh.pkix.core.utils.KeyUsageUtils;
 import org.adorsys.plh.pkix.core.utils.ProviderUtils;
 import org.adorsys.plh.pkix.core.utils.PublicKeyUtils;
 import org.adorsys.plh.pkix.core.utils.V3CertificateUtils;
 import org.adorsys.plh.pkix.core.utils.action.ActionContext;
 import org.adorsys.plh.pkix.core.utils.asn1.ASN1CertificateChain;
-import org.adorsys.plh.pkix.core.utils.contact.ContactManager;
 import org.adorsys.plh.pkix.core.utils.jca.X509CertificateBuilder;
 import org.bouncycastle.asn1.crmf.CertTemplate;
-import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.AuthorityInformationAccess;
+import org.bouncycastle.asn1.x509.AuthorityKeyIdentifier;
 import org.bouncycastle.asn1.x509.BasicConstraints;
 import org.bouncycastle.asn1.x509.Extension;
 import org.bouncycastle.asn1.x509.Extensions;
@@ -41,16 +45,27 @@ public class CertReqCertifyActionExecutor {
 	public ASN1CertificateChain execute(ActionContext actionContext){
 		checker.checkDirty().checkNull(certTemplate,actionContext);
 		
-		ContactManager contactManager = actionContext.get(ContactManager.class);
-		PrivateKeyEntry privateKeyEntry = null;
+		UserAccount userAccount = actionContext.get(UserAccount.class);		
+		checker.checkNull(userAccount);
+
 		
+		PrivateKeyEntry privateKeyEntry = null;
 		// If the issuer field is not null, try to find the ca certificate with the given issuer
-		X500Name issuer = certTemplate.getIssuer();
-		if(issuer!=null){
-			privateKeyEntry = contactManager.findCaEntryBySubject(PrivateKeyEntry.class, certTemplate.getIssuer());
+		// We will have to ignore the issuer field. Is not deterministic.
+		AuthorityKeyIdentifier authorityKeyIdentifier = KeyIdUtils.readAuthorityKeyIdentifier(certTemplate);
+		if(authorityKeyIdentifier!=null){
+			String authorityKeyIdentifierHex = KeyIdUtils.authorityKeyIdentifierToString(authorityKeyIdentifier);
+
+			// then search by public key identifier
+			KeyStoreAlias keyStoreAliasByPublicKeyIdentifier = new KeyStoreAlias(authorityKeyIdentifierHex, null, null, PurposeEnum.CA, PrivateKeyEntry.class);
+			List<PrivateKeyEntry> privateKeys = userAccount.findPrivateKeys(keyStoreAliasByPublicKeyIdentifier);
+			
+			if(privateKeys!=null&&privateKeys.size()>0)
+				privateKeyEntry = privateKeys.iterator().next();
 		}
+		
 		if(privateKeyEntry==null){
-			privateKeyEntry = contactManager.getMainCaPrivateKeyEntry();
+			privateKeyEntry = userAccount.getAnyCaPrivateKeyEntry();
 		}
 
 		SubjectPublicKeyInfo subjectPublicKeyInfo = certTemplate.getPublicKey();
@@ -96,6 +111,7 @@ public class CertReqCertifyActionExecutor {
 			if(authorityInformationAccess!=null)
 				certificateBuilder = certificateBuilder.withAuthorityInformationAccess(authorityInformationAccess);
 		}
+		
 		X509CertificateHolder x509CertificateHolder = certificateBuilder.build(privateKeyEntry.getPrivateKey());
 		Certificate[] certificateChain = privateKeyEntry.getCertificateChain();
 		org.bouncycastle.asn1.x509.Certificate[] crts = new org.bouncycastle.asn1.x509.Certificate[certificateChain.length + 1];

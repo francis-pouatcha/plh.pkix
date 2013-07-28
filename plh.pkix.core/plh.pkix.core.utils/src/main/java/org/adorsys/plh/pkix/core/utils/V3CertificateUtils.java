@@ -6,7 +6,6 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
-import java.security.Provider;
 import java.security.PublicKey;
 import java.security.SignatureException;
 import java.security.cert.CertStore;
@@ -23,10 +22,11 @@ import java.util.List;
 
 import org.adorsys.plh.pkix.core.utils.exception.PlhUncheckedException;
 import org.adorsys.plh.pkix.core.utils.store.PlhPkixCoreMessages;
+import org.bouncycastle.asn1.crmf.CertTemplate;
 import org.bouncycastle.asn1.x509.AuthorityKeyIdentifier;
 import org.bouncycastle.asn1.x509.BasicConstraints;
 import org.bouncycastle.asn1.x509.Extension;
-import org.bouncycastle.asn1.x509.KeyUsage;
+import org.bouncycastle.asn1.x509.Extensions;
 import org.bouncycastle.asn1.x509.SubjectKeyIdentifier;
 import org.bouncycastle.asn1.x509.X509Extension;
 import org.bouncycastle.cert.X509CertificateHolder;
@@ -88,41 +88,41 @@ public class V3CertificateUtils {
 		}
 		return list;
 	}
-	
-	public static void checkSelfSigned(X509CertificateHolder certificateHolder, 
-			byte[] subjectKeyId, byte[]  issuerKeyId, Provider provider)
-					throws SecurityException{
-		
-		JcaX509ExtensionUtils extUtils;
-		try {
-			extUtils = new JcaX509ExtensionUtils();
-		} catch (NoSuchAlgorithmException e) {
-			throw new IllegalStateException(e);
-		}
-		SubjectKeyIdentifier subjectKeyIdentifier = extUtils.createSubjectKeyIdentifier(certificateHolder.getSubjectPublicKeyInfo());
-		AuthorityKeyIdentifier authorityKeyIdentifier = extUtils.createAuthorityKeyIdentifier(certificateHolder.getSubjectPublicKeyInfo());
-		
-		boolean ckecked = Arrays.equals(subjectKeyId, subjectKeyIdentifier.getKeyIdentifier()) &&
-				Arrays.equals(issuerKeyId, authorityKeyIdentifier.getKeyIdentifier());
-
-		if (!ckecked){
-			throw new SecurityException("both certificate not matching");
-		}
-		X509Certificate certificate = getX509JavaCertificate(certificateHolder);
-		try {
-			certificate.verify(certificate.getPublicKey());
-		} catch (InvalidKeyException e) {
-			throw new SecurityException(e);
-		} catch (CertificateException e) {
-			throw new SecurityException(e);
-		} catch (NoSuchAlgorithmException e) {
-			throw new IllegalStateException(e);
-		} catch (NoSuchProviderException e) {
-			throw new IllegalStateException(e);
-		} catch (SignatureException e) {
-			throw new IllegalStateException(e);
-		}
-	}
+//	
+//	public static void checkSelfSigned(X509CertificateHolder certificateHolder, 
+//			byte[] subjectKeyId, byte[]  issuerKeyId, Provider provider)
+//					throws SecurityException{
+//		
+//		JcaX509ExtensionUtils extUtils;
+//		try {
+//			extUtils = new JcaX509ExtensionUtils();
+//		} catch (NoSuchAlgorithmException e) {
+//			throw new IllegalStateException(e);
+//		}
+//		SubjectKeyIdentifier subjectKeyIdentifier = extUtils.createSubjectKeyIdentifier(certificateHolder.getSubjectPublicKeyInfo());
+//		AuthorityKeyIdentifier authorityKeyIdentifier = extUtils.createAuthorityKeyIdentifier(certificateHolder.getSubjectPublicKeyInfo());
+//		
+//		boolean ckecked = Arrays.equals(subjectKeyId, subjectKeyIdentifier.getKeyIdentifier()) &&
+//				Arrays.equals(issuerKeyId, authorityKeyIdentifier.getKeyIdentifier());
+//
+//		if (!ckecked){
+//			throw new SecurityException("both certificate not matching");
+//		}
+//		X509Certificate certificate = getX509JavaCertificate(certificateHolder);
+//		try {
+//			certificate.verify(certificate.getPublicKey());
+//		} catch (InvalidKeyException e) {
+//			throw new SecurityException(e);
+//		} catch (CertificateException e) {
+//			throw new SecurityException(e);
+//		} catch (NoSuchAlgorithmException e) {
+//			throw new IllegalStateException(e);
+//		} catch (NoSuchProviderException e) {
+//			throw new IllegalStateException(e);
+//		} catch (SignatureException e) {
+//			throw new IllegalStateException(e);
+//		}
+//	}
 	
 	public static boolean isValid(X509CertificateHolder certificateHolder){
 		Date notBefore = certificateHolder.getNotBefore();
@@ -151,19 +151,53 @@ public class V3CertificateUtils {
 		BasicConstraints issuerBasicConstraints = BasicConstraints.getInstance(basicConstraintsExtension.getParsedValue());
 		if(!issuerBasicConstraints.isCA()) return false;
 		
-		return KeyUsageUtils.hasAllKeyUsage(cert, KeyUsage.keyCertSign);
+		return KeyUsageUtils.hasAllKeyUsage(cert, KeyUsageUtils.getKeyUsageForCertificationAuthotity());
 	}
 	public static boolean isCaKey(Certificate cert){
 		X509CertificateHolder certificateHolder = getX509CertificateHolder(cert);
 		return isCaKey(certificateHolder);
 	}
+	public static boolean isCaKey(CertTemplate certTemplate){
+		// check is issuerCertificate is ca certificate
+		Extensions extensions = certTemplate.getExtensions();
+		Extension basicConstraintsExtension = extensions.getExtension(X509Extension.basicConstraints);
+		if(basicConstraintsExtension==null) return false;
+		
+		BasicConstraints issuerBasicConstraints = BasicConstraints.getInstance(basicConstraintsExtension.getParsedValue());
+		if(!issuerBasicConstraints.isCA()) return false;
+		
+		return KeyUsageUtils.hasAllKeyUsage(certTemplate, KeyUsageUtils.getKeyUsageForCertificationAuthotity());
+	}
 
 	public static boolean isSmimeKey(X509CertificateHolder cert){		
-		return KeyUsageUtils.hasAnyKeyUsage(cert, KeyUsage.nonRepudiation, KeyUsage.digitalSignature, KeyUsage.keyEncipherment);
+		return KeyUsageUtils.hasAnyKeyUsage(cert, KeyUsageUtils.getKeyUsageForSMimeKey());
 	}
 	public static boolean isSmimeKey(Certificate cert){
 		X509CertificateHolder certificateHolder = getX509CertificateHolder(cert);
 		return isSmimeKey(certificateHolder);
+	}
+	public static boolean isSmimeKey(CertTemplate cert){		
+		return KeyUsageUtils.hasAnyKeyUsage(cert, KeyUsageUtils.getKeyUsageForSMimeKey());
+	}
+	
+	public static boolean isSelfSigned(X509CertificateHolder certHolder){
+		return isSelfSigned(getX509JavaCertificate(certHolder));
+	}
+	public static boolean isSelfSigned(java.security.cert.Certificate certificate) {
+		try {
+			certificate.verify(certificate.getPublicKey());
+			return true;
+		} catch (InvalidKeyException e) {
+			return false;
+		} catch (CertificateException e) {
+			return false;
+		} catch (NoSuchAlgorithmException e) {
+			throw new IllegalStateException(e);
+		} catch (NoSuchProviderException e) {
+			throw new IllegalStateException(e);
+		} catch (SignatureException e) {
+			return false;
+		}
 	}
 	
 	public static final PublicKey extractPublicKey(X509CertificateHolder subjectCertificate) {
@@ -222,9 +256,6 @@ public class V3CertificateUtils {
 		if(!signer.getSerialNumber().equals(authorityKeyIdentifier.getAuthorityCertSerialNumber())) return false;
 		
 		return verify(signed, signer);
-//		return false;	
-//		// then everything is ok
-//		return true;
 	}
 	
 	private static boolean verify(X509CertificateHolder signed,

@@ -12,8 +12,10 @@ import java.util.List;
 import org.adorsys.plh.pkix.core.cmp.certrequest.CertRequestMessages;
 import org.adorsys.plh.pkix.core.cmp.stores.CMPRequest;
 import org.adorsys.plh.pkix.core.cmp.stores.OutgoingRequests;
+import org.adorsys.plh.pkix.core.smime.plooh.UserAccount;
 import org.adorsys.plh.pkix.core.utils.BuilderChecker;
 import org.adorsys.plh.pkix.core.utils.KeyIdUtils;
+import org.adorsys.plh.pkix.core.utils.KeyStoreAlias;
 import org.adorsys.plh.pkix.core.utils.ProviderUtils;
 import org.adorsys.plh.pkix.core.utils.V3CertificateUtils;
 import org.adorsys.plh.pkix.core.utils.action.ActionContext;
@@ -35,7 +37,6 @@ import org.bouncycastle.asn1.crmf.CertReqMsg;
 import org.bouncycastle.asn1.crmf.CertRequest;
 import org.bouncycastle.asn1.crmf.CertTemplate;
 import org.bouncycastle.asn1.crmf.EncryptedValue;
-import org.bouncycastle.asn1.x509.SubjectKeyIdentifier;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.crmf.CRMFException;
 import org.bouncycastle.cert.crmf.EncryptedValueParser;
@@ -82,8 +83,8 @@ public class CertificationReplyAcceptActionExecutor {
 
 		checker.checkDirty().checkNull(actionContext);
 		CMPRequest cmpRequest = actionContext.get(CMPRequest.class);
-		ContactManager contactManager = actionContext.get(ContactManager.class);
-		checker.checkNull(cmpRequest, contactManager);
+		UserAccount userAccount = actionContext.get(UserAccount.class);
+		checker.checkNull(cmpRequest, userAccount);
 		
 		OutgoingRequests requests = actionContext.get(OutgoingRequests.class);
 		PKIMessage originalPkiMessage = requests.loadRequest(cmpRequest);
@@ -127,8 +128,9 @@ public class CertificationReplyAcceptActionExecutor {
 			}
 			if(certResponse==null) continue;
 			
-			SubjectKeyIdentifier publicKeyIdentifier = KeyIdUtils.createPublicKeyIdentifier(certTemplate.getPublicKey());
-			PrivateKeyEntry subjectPrivateKeyEntry = contactManager.findEntryByPublicKeyIdentifier(PrivateKeyEntry.class, publicKeyIdentifier.getKeyIdentifier());
+			String publicKeyIdHex = KeyIdUtils.createPublicKeyIdentifierAsString(certTemplate.getPublicKey());
+			KeyStoreAlias keyStoreAlias = new KeyStoreAlias(publicKeyIdHex, null, null, null, PrivateKeyEntry.class);
+			PrivateKeyEntry subjectPrivateKeyEntry = userAccount.getPrivateContactManager().findEntryByAlias(PrivateKeyEntry.class, keyStoreAlias);
 			if(subjectPrivateKeyEntry==null)
 				throw PlhUncheckedException.toException(RESOURCE_NAME, 
 						CertRequestMessages.CertRequestMessages_request_missingAssociatedPoP);
@@ -156,10 +158,11 @@ public class CertificationReplyAcceptActionExecutor {
 			List<X509CertificateHolder> allCertificates = new ArrayList<X509CertificateHolder>();
 			allCertificates.add(x509CertificateHolder);
 			allCertificates.addAll(caCertificates);
+			ContactManager trustedContactManager = userAccount.getTrustedContactManager();
 			PKIXParameters params = PKIXParametersFactory.makeParams(
-					contactManager.getTrustAnchors(),
-					contactManager.getCrl(),
-					contactManager.findCertStores(allCertificates));
+					trustedContactManager.getTrustAnchors(),
+					trustedContactManager.getCrl(),
+					trustedContactManager.findCertStores(allCertificates));
 			
 			
 			generalCertValidator = new GeneralCertValidator()
@@ -193,98 +196,6 @@ public class CertificationReplyAcceptActionExecutor {
 		}
 			
 		return certValidationResults;
-		
-//			
-//			
-//			
-//			
-//			
-//			
-//			
-//			
-//			// iterate through the cert response and build the certification path.
-//			List<X509CertificateHolder> requestedCerts = new ArrayList<X509CertificateHolder>();
-//			for (int i = 0; i < response.length; i++) {
-//				CertResponse certResponse = response[i];
-//				ASN1Integer crid = certResponse.getCertReqId();
-//				
-//				if(crid == null)// : "Missing cert request id, do not process";
-//					throw PlhUncheckedException.toException(RESOURCE_NAME,
-//							InitRequestMessages.InitRequestMessages_response_missingCertRequestId);
-//				
-//				if(!certReqId.equals(crid))
-//					throw PlhUncheckedException.toException(RESOURCE_NAME,
-//							InitRequestMessages.InitRequestMessages_response_wrongCertRequestId,
-//							new Object[]{KeyIdUtils.hexEncode(crid),
-//							KeyIdUtils.hexEncode(certReqId),
-//							KeyIdUtils.hexEncode(cmpRequest.getTransactionID())});
-//				
-//				CertOrEncCert certOrEncCert = certResponse
-//						.getCertifiedKeyPair().getCertOrEncCert();
-//				CMPCertificate cmpCertificate = certOrEncCert.getCertificate();
-//				requestedCerts.add(new X509CertificateHolder(cmpCertificate.getX509v3PKCert()));
-//			}
-//			
-//			
-//			
-//			
-//			List<X509CertificateHolder> allCertificates = new ArrayList<X509CertificateHolder>();
-//			allCertificates.add(requestedCert);
-//			allCertificates.addAll(caCertificates);
-//			PKIXParameters params = PKIXParametersFactory.makeParams(
-//					contactManager.getTrustAnchors(),
-//					contactManager.getCrl(),
-//					contactManager.findCertStores(allCertificates));
-//
-//			ProcessingResults<CertAndCertPath> processingResults = new ProcessingResults<CertAndCertPath>();
-//			GeneralCertValidator generalCertValidator;
-//		}
-
-//		if(response.length<=0)
-//			throw PlhUncheckedException.toException(RESOURCE_NAME,
-//					CertRequestMessages.CertRequestMessages_response_certResponseEmpty);
-
-		
-//			
-//		if(crid == null)// : "Missing cert request id, do not process";
-//			throw PlhUncheckedException.toException(RESOURCE_NAME,
-//					CertRequestMessages.CertRequestMessages_response_missingCertRequestId);
-			
-//		if(!certReqId.equals(crid))
-//			throw PlhUncheckedException.toException(RESOURCE_NAME,
-//					CertRequestMessages.CertRequestMessages_response_wrongCertRequestId,
-//					new Object[]{KeyIdUtils.hexEncode(crid),
-//					KeyIdUtils.hexEncode(certReqId),
-//					KeyIdUtils.hexEncode(cmpRequest.getTransactionID())});
-//		
-//		
-//
-//		generalCertValidator = new GeneralCertValidator()
-//				.withPKIXParameters(params)
-//				.withSenderSupliedCerts(V3CertificateUtils.createCertStore(allCertificates))
-//				.validate(new Date());
-//		processingResults.addErrors(generalCertValidator.getErrors());
-//		processingResults.addNotifications(generalCertValidator.getNotifications());
-//
-//		CertPathAndOrigin certPathAndOrigin = generalCertValidator.getCertPathAndOrigin();
-//		CertPath certPath = certPathAndOrigin.getCertPath();
-//		boolean validSignature = false;
-//		List<? extends Certificate> certificates = certPath.getCertificates();
-//		if(certificates.size()>1){
-//			Certificate targetCertificate = certificates.get(0);
-//			try {
-//				targetCertificate.verify(certificates.get(1).getPublicKey());
-//				validSignature=true;
-//			} catch (Exception e) {
-//				// noop
-//			}
-//		}
-//		processingResults.setReturnValue(new CertAndCertPath(requestedCert, certPathAndOrigin, validSignature));
-//		new CertificationReplyValidator()
-//			.withCertTemplate(certTemplate)
-//			.validate(processingResults);
-//
-//		return processingResults;
 	}
 
 	public CertificationReplyAcceptActionExecutor withActionContext(ActionContext actionContext) {

@@ -4,6 +4,7 @@ import org.adorsys.plh.pkix.core.cmp.stores.CMPRequest;
 import org.adorsys.plh.pkix.core.cmp.stores.ErrorMessageHelper;
 import org.adorsys.plh.pkix.core.cmp.stores.OutgoingRequests;
 import org.adorsys.plh.pkix.core.cmp.stores.ProcessingStatus;
+import org.adorsys.plh.pkix.core.smime.plooh.UserAccount;
 import org.adorsys.plh.pkix.core.utils.BuilderChecker;
 import org.adorsys.plh.pkix.core.utils.V3CertificateUtils;
 import org.adorsys.plh.pkix.core.utils.action.ActionContext;
@@ -12,7 +13,6 @@ import org.adorsys.plh.pkix.core.utils.action.ProcessingResults;
 import org.adorsys.plh.pkix.core.utils.asn1.ASN1CertValidationResult;
 import org.adorsys.plh.pkix.core.utils.asn1.ASN1CertValidationResults;
 import org.adorsys.plh.pkix.core.utils.asn1.ASN1CertificateChain;
-import org.adorsys.plh.pkix.core.utils.contact.ContactManager;
 import org.adorsys.plh.pkix.core.utils.exception.PlhCheckedException;
 import org.bouncycastle.asn1.DERIA5String;
 import org.bouncycastle.asn1.x509.Certificate;
@@ -27,10 +27,10 @@ public class InitializationResponseImportActionProcessor implements
 
 		checker.checkNull(actionContext);
 		
-		ContactManager contactManager = actionContext.get(ContactManager.class);
+		UserAccount userAccount = actionContext.get(UserAccount.class);
 		OutgoingRequests requests = actionContext.get(OutgoingRequests.class);
 		CMPRequest cmpRequest = actionContext.get(CMPRequest.class);
-		checker.checkNull(cmpRequest,requests, contactManager);
+		checker.checkNull(cmpRequest,requests, userAccount);
 		
 		requests.lock(cmpRequest);
 		try {
@@ -49,7 +49,7 @@ public class InitializationResponseImportActionProcessor implements
 				for (Certificate certificate : certArray) {
 					X509CertificateHolder certificateHolder = V3CertificateUtils.getX509CertificateHolder(certificate);
 					try {
-						contactManager.addCertEntry(certificateHolder);
+						userAccount.getTrustedContactManager().addCertEntry(certificateHolder);
 					} catch (PlhCheckedException e) {
 						processingResults.addError(e.getErrorMessage());
 					}

@@ -15,7 +15,6 @@ import org.adorsys.plh.pkix.core.utils.action.ActionProcessor;
 import org.adorsys.plh.pkix.core.utils.asn1.ASN1Action;
 import org.adorsys.plh.pkix.core.utils.asn1.ASN1CertTemplateProcessingResult;
 import org.adorsys.plh.pkix.core.utils.asn1.ASN1CertTemplateProcessingResults;
-import org.adorsys.plh.pkix.core.utils.contact.ContactManager;
 import org.adorsys.plh.pkix.core.utils.exception.PlhUncheckedException;
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.DERGeneralizedTime;
@@ -28,7 +27,6 @@ import org.bouncycastle.asn1.crmf.CertRequest;
 import org.bouncycastle.asn1.crmf.CertTemplate;
 import org.bouncycastle.cert.cmp.GeneralPKIMessage;
 import org.bouncycastle.cert.cmp.ProtectedPKIMessage;
-import org.bouncycastle.i18n.ErrorBundle;
 
 /**
  * This class can process some automatic validation of the requests to be signed.
@@ -62,11 +60,10 @@ public class CertReqApprovalActionProcessor implements
 
 		checker.checkNull(actionContext);
 
-		ContactManager contactManager = actionContext.get(ContactManager.class);
 		IncomingRequests requests = actionContext.get(IncomingRequests.class);
 		CMPRequest cmpRequest = actionContext.get(CMPRequest.class);
 				
-		checker.checkNull(cmpRequest,requests, contactManager);
+		checker.checkNull(cmpRequest,requests);
 		boolean executeAction = false;
 		requests.lock(cmpRequest);
 		try {
@@ -112,9 +109,6 @@ public class CertReqApprovalActionProcessor implements
 			executeAction=true;
 		} catch(PlhUncheckedException e){
 			ErrorMessageHelper.processError(cmpRequest, requests, e.getErrorMessage());
-//		} catch(RuntimeException e){
-//			ErrorBundle errorMessage = PlhUncheckedException.toErrorMessage(e, getClass().getName()+"#process");
-//			ErrorMessageHelper.processError(cmpRequest, requests, errorMessage);
 		} finally {
 			requests.unlock(cmpRequest);
 		}

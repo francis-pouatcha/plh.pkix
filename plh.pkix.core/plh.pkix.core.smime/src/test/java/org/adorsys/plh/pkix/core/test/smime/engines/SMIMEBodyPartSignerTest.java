@@ -49,7 +49,7 @@ public class SMIMEBodyPartSignerTest {
 			.withKeyStoreWraper(keyStoreWraper)
 			.build();
 		ContactManager contactManager = new ContactManagerImpl(keyStoreWraper);
-		KeyStoreAlias keyStoreAlias = new KeyStoreAlias(null, null, null, null,
+		KeyStoreAlias keyStoreAlias = new KeyStoreAlias(null, null,
 				null, KeyStoreAlias.PurposeEnum.ME, PrivateKeyEntry.class);
 		PrivateKeyEntry privateKeyEntry = contactManager.findEntryByAlias(PrivateKeyEntry.class, keyStoreAlias);
 
@@ -112,7 +112,7 @@ public class SMIMEBodyPartSignerTest {
 			.withKeyStoreWraper(keyStoreWraper)
 			.build();
 		ContactManager contactManager = new ContactManagerImpl(keyStoreWraper);
-		KeyStoreAlias keyStoreAlias = new KeyStoreAlias(null, null, null, null,
+		KeyStoreAlias keyStoreAlias = new KeyStoreAlias(null, null,
 				null, KeyStoreAlias.PurposeEnum.ME, PrivateKeyEntry.class);
 		PrivateKeyEntry privateKeyEntry = contactManager.findEntryByAlias(PrivateKeyEntry.class, keyStoreAlias);
 

@@ -9,6 +9,7 @@ import org.adorsys.plh.pkix.core.utils.KeyUsageUtils;
 import org.adorsys.plh.pkix.core.utils.V3CertificateUtils;
 import org.adorsys.plh.pkix.core.utils.X500NameHelper;
 import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x509.AuthorityKeyIdentifier;
 import org.bouncycastle.asn1.x509.BasicConstraints;
 import org.bouncycastle.asn1.x509.Extension;
 import org.bouncycastle.asn1.x509.GeneralNames;
@@ -44,6 +45,7 @@ public class CertificationRequestFieldHolder {
     // address of the receiver
     private X509CertificateHolder receiverCertificate;
     private String receiverEmail;
+    private AuthorityKeyIdentifier authorityKeyIdentifier;
     
     public CertificationRequestFieldHolder(PrivateKeyEntry privateKeyEntryToCertify){
     	this.privateKeyEntryToCertify = privateKeyEntryToCertify;
@@ -104,6 +106,15 @@ public class CertificationRequestFieldHolder {
 
 	public void setSubjectPublicKeyInfo(SubjectPublicKeyInfo subjectPublicKeyInfo) {
 		this.subjectPublicKeyInfo = subjectPublicKeyInfo;
+	}
+	
+	public AuthorityKeyIdentifier getAuthorityKeyIdentifier() {
+		return authorityKeyIdentifier;
+	}
+
+	public void setAuthorityKeyIdentifier(
+			AuthorityKeyIdentifier authorityKeyIdentifier) {
+		this.authorityKeyIdentifier = authorityKeyIdentifier;
 	}
 
 	public Date getNotBefore() {

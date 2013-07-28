@@ -1,6 +1,7 @@
 package org.adorsys.plh.pkix.core.cmp;
 
 import java.security.KeyStore.PrivateKeyEntry;
+import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -14,9 +15,10 @@ import org.adorsys.plh.pkix.core.cmp.message.ExecutorConstants;
 import org.adorsys.plh.pkix.core.cmp.registration.RegistrationRequestInitActionProcessor;
 import org.adorsys.plh.pkix.core.cmp.stores.IncomingRequests;
 import org.adorsys.plh.pkix.core.cmp.stores.OutgoingRequests;
+import org.adorsys.plh.pkix.core.smime.plooh.UserAccount;
 import org.adorsys.plh.pkix.core.utils.action.ActionContext;
-import org.adorsys.plh.pkix.core.utils.contact.ContactManager;
-import org.adorsys.plh.pkix.core.utils.plooh.PloohAccount;
+import org.adorsys.plh.pkix.core.utils.action.ActionHandler;
+import org.adorsys.plh.pkix.core.utils.action.SimpleActionHandler;
 import org.adorsys.plh.pkix.core.utils.store.FileWrapper;
 
 /**
@@ -26,13 +28,15 @@ import org.adorsys.plh.pkix.core.utils.store.FileWrapper;
  */
 public class CMPAccount {
 
-	private final PloohAccount ploohAccount;
+	private final UserAccount userAccount;
 
-	public CMPAccount(PloohAccount ploohAccount) {
-		this.ploohAccount = ploohAccount;
-		ActionContext accountContext = ploohAccount.getAccountContext();
+	public CMPAccount(UserAccount userAccount, CMPMessenger cmpMessenger) {
+		this.userAccount = userAccount;
+		ActionContext accountContext = userAccount.getAccountContext();
+		accountContext.put(ActionHandler.class, new SimpleActionHandler());
+		accountContext.put(CMPMessenger.class, cmpMessenger);
 
-		FileWrapper accountDir = ploohAccount.getAccountDir();
+		FileWrapper accountDir = userAccount.getAccountDir();
 		ModuleActivators moduleActivators = new ModuleActivators(accountContext, accountDir);
 		
 		ExecutorService executors_out = Executors.newFixedThreadPool(5);
@@ -46,19 +50,19 @@ public class CMPAccount {
 		accountContext.put(IncomingRequests.class, new IncomingRequests(accountDir));
 		
 	}
-	
-	public PloohAccount getPloohAccount() {
-		return ploohAccount;
+
+	public UserAccount getUserAccount() {
+		return userAccount;
 	}
 
 	/**
 	 * Register's this account with the messaging server.
 	 */
 	public void registerAccount(){
-		ActionContext actionContext = new ActionContext(ploohAccount.getAccountContext());
-		ContactManager contactManager = actionContext.get(ContactManager.class);
-		PrivateKeyEntry messagePrivateKeyEntry = contactManager.getMainMessagePrivateKeyEntry();
+		List<PrivateKeyEntry> privateKeyEntries = userAccount.findAllMessagePrivateKeyEntries();
+		PrivateKeyEntry messagePrivateKeyEntry = privateKeyEntries.iterator().next();
 
+		ActionContext actionContext = new ActionContext(userAccount.getAccountContext());
 		actionContext.put(PrivateKeyEntry.class, messagePrivateKeyEntry);
 		RegistrationRequestInitActionProcessor processor = actionContext.get(RegistrationRequestInitActionProcessor.class);	
 		processor.process(actionContext);
@@ -70,14 +74,14 @@ public class CMPAccount {
 	 * @param email
 	 */
 	public void sendInitializationRequest(InitializationRequestFieldHolder f) {
-		ActionContext actionContext = new ActionContext(ploohAccount.getAccountContext());
+		ActionContext actionContext = new ActionContext(userAccount.getAccountContext());
 		actionContext.put(InitializationRequestFieldHolder.class, f);
 		OutgoingInitializationRequestInitActionProcessor actionProcessor = actionContext.get(OutgoingInitializationRequestInitActionProcessor.class);
 		actionProcessor.process(actionContext);
 	}
 	
 	public void sendCertificationRequest(CertificationRequestFieldHolder f){
-		ActionContext actionContext = new ActionContext(ploohAccount.getAccountContext());
+		ActionContext actionContext = new ActionContext(userAccount.getAccountContext());
 		actionContext.put(CertificationRequestFieldHolder.class, f);
 		CertificationRequestInitActionProcessor actionProcessor = actionContext.get(CertificationRequestInitActionProcessor.class);
 		actionProcessor.process(actionContext);

@@ -281,20 +281,20 @@ public class X500NameHelper {
 		return null;
 	}
 
-	public static String readSubjectUniqueIdentifier(X509CertificateHolder certificateHolder){
-		X500Name subjectDN = readSubjectDN(certificateHolder);
-		return readUniqueIdentifier(subjectDN);
-	}
-	
-	public static String readIssuerUniqueIdentifier(X509CertificateHolder certificateHolder){
-		X500Name issuerDN = certificateHolder.getIssuer();
-		return readUniqueIdentifier(issuerDN);
-	}
-	
-	public static String readUniqueIdentifier(X500Name subjectDN){
-		return getAttributeString(subjectDN, BCStyle.UNIQUE_IDENTIFIER);
-	}
-	
+//	public static String readSubjectUniqueIdentifier(X509CertificateHolder certificateHolder){
+//		X500Name subjectDN = readSubjectDN(certificateHolder);
+//		return readUniqueIdentifier(subjectDN);
+//	}
+//	
+//	public static String readIssuerUniqueIdentifier(X509CertificateHolder certificateHolder){
+//		X500Name issuerDN = certificateHolder.getIssuer();
+//		return readUniqueIdentifier(issuerDN);
+//	}
+//	
+//	public static String readUniqueIdentifier(X500Name subjectDN){
+//		return getAttributeString(subjectDN, BCStyle.UNIQUE_IDENTIFIER);
+//	}
+//	
 	public static List<String> readSubjectURIsFromAltName(X509CertificateHolder certHolder){
 
 		Extensions extensions = certHolder.getExtensions();

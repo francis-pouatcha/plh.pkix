@@ -10,7 +10,6 @@ import java.util.Arrays;
 import java.util.Date;
 
 import org.adorsys.plh.pkix.core.utils.BuilderChecker;
-import org.adorsys.plh.pkix.core.utils.KeyIdUtils;
 import org.adorsys.plh.pkix.core.utils.KeyUsageUtils;
 import org.adorsys.plh.pkix.core.utils.ProviderUtils;
 import org.adorsys.plh.pkix.core.utils.V3CertificateUtils;
@@ -19,8 +18,6 @@ import org.adorsys.plh.pkix.core.utils.store.KeyPairAndCertificateHolder;
 import org.adorsys.plh.pkix.core.utils.store.KeyStoreWraper;
 import org.apache.commons.lang3.time.DateUtils;
 import org.bouncycastle.asn1.x500.X500Name;
-import org.bouncycastle.asn1.x500.style.BCStrictStyle;
-import org.bouncycastle.asn1.x509.GeneralName;
 import org.bouncycastle.asn1.x509.GeneralNames;
 import org.bouncycastle.cert.X509CertificateHolder;
 
@@ -101,31 +98,31 @@ public class KeyPairBuilder {
 
 		// This is an exception case. In all oder cases, we will be expecting subject identifier to come 
 		// from the DN.
-		String subjectUniqueIdentifier = X500NameHelper.readUniqueIdentifier(endEntityName);
-		if(subjectUniqueIdentifier==null){
-			String keyIdentifierAsString = KeyIdUtils.createPublicKeyIdentifierAsString(keyPair.getPublic());
-			X500Name oldEndEntityName = endEntityName;
-			// modify end entity name and subject alternative names.
-			endEntityName = X500NameHelper.addNameComponent(endEntityName, BCStrictStyle.UNIQUE_IDENTIFIER, keyIdentifierAsString);
-			
-			if(subjectAlternativeNames==null){
-				subjectAlternativeNames=new GeneralNames(new GeneralName(endEntityName));
-			} else {
-				// if old entity name was part of the subject alternative name, also modify accordingly.
-				GeneralName[] oldArray = subjectAlternativeNames.getNames();
-				GeneralName[] newArray = new GeneralName[oldArray.length];
-				for (int i = 0; i < oldArray.length; i++) {
-					GeneralName generalName = oldArray[i];
-					if(generalName.getName().equals(oldEndEntityName)){
-						newArray[i]=new GeneralName(endEntityName);
-					} else {
-						newArray[i]=generalName;
-					}
-					
-				}
-				subjectAlternativeNames=new GeneralNames(newArray);
-			}
-		}
+//		String subjectUniqueIdentifier = X500NameHelper.readUniqueIdentifier(endEntityName);
+//		if(subjectUniqueIdentifier==null){
+//			String keyIdentifierAsString = KeyIdUtils.createPublicKeyIdentifierAsString(keyPair.getPublic());
+//			X500Name oldEndEntityName = endEntityName;
+//			// modify end entity name and subject alternative names.
+//			endEntityName = X500NameHelper.addNameComponent(endEntityName, BCStrictStyle.UNIQUE_IDENTIFIER, keyIdentifierAsString);
+//			
+//			if(subjectAlternativeNames==null){
+//				subjectAlternativeNames=new GeneralNames(new GeneralName(endEntityName));
+//			} else {
+//				// if old entity name was part of the subject alternative name, also modify accordingly.
+//				GeneralName[] oldArray = subjectAlternativeNames.getNames();
+//				GeneralName[] newArray = new GeneralName[oldArray.length];
+//				for (int i = 0; i < oldArray.length; i++) {
+//					GeneralName generalName = oldArray[i];
+//					if(generalName.getName().equals(oldEndEntityName)){
+//						newArray[i]=new GeneralName(endEntityName);
+//					} else {
+//						newArray[i]=generalName;
+//					}
+//					
+//				}
+//				subjectAlternativeNames=new GeneralNames(newArray);
+//			}
+//		}
 		X509CertificateBuilder builder = new X509CertificateBuilder()
 			.withCa(true)
 			.withNotBefore(DateUtils.addDays(new Date(), -1))

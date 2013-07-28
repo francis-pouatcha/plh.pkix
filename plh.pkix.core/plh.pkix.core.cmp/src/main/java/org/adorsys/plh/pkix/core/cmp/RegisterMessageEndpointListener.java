@@ -8,5 +8,5 @@ package org.adorsys.plh.pkix.core.cmp;
  */
 public interface RegisterMessageEndpointListener {
 
-	public void newMessageEndpoint(String email);
+	public void newMessageEndpoint(String publicKeyIdHex);
 }

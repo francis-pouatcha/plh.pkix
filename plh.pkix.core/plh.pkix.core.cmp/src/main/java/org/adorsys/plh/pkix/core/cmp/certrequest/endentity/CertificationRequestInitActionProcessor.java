@@ -6,13 +6,13 @@ import java.util.Date;
 import org.adorsys.plh.pkix.core.cmp.stores.CMPRequest;
 import org.adorsys.plh.pkix.core.cmp.stores.OutgoingRequests;
 import org.adorsys.plh.pkix.core.cmp.stores.ProcessingStatus;
+import org.adorsys.plh.pkix.core.smime.plooh.UserAccount;
 import org.adorsys.plh.pkix.core.utils.BuilderChecker;
 import org.adorsys.plh.pkix.core.utils.UUIDUtils;
 import org.adorsys.plh.pkix.core.utils.action.ActionContext;
 import org.adorsys.plh.pkix.core.utils.action.ActionHandler;
 import org.adorsys.plh.pkix.core.utils.action.ActionProcessor;
 import org.adorsys.plh.pkix.core.utils.asn1.ASN1Action;
-import org.adorsys.plh.pkix.core.utils.contact.ContactManager;
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.DERGeneralizedTime;
 import org.bouncycastle.asn1.DERIA5String;
@@ -32,8 +32,8 @@ public class CertificationRequestInitActionProcessor implements ActionProcessor 
 	public void process(ActionContext context) {
 		OutgoingRequests requestOut = context.get(OutgoingRequests.class);
 		ActionHandler actionHandler = context.get(ActionHandler.class);
-		ContactManager contactManager = context.get(ContactManager.class);
-		checker.checkNull(contactManager,requestOut,actionHandler);
+		UserAccount userAccount = context.get(UserAccount.class);
+		checker.checkNull(userAccount,requestOut,actionHandler);
 		
 		CMPRequest cmpRequest = context.get(CMPRequest.class);// If the process was started by a user, this is non null
 
@@ -53,6 +53,7 @@ public class CertificationRequestInitActionProcessor implements ActionProcessor 
 				.withReceiverEmail(f.getReceiverEmail())
 				.withSubjectAltNames(f.getSubjectAltNames())
 				.withSubjectDN(f.getSubjectDN())
+				.withAuthorityKeyIdentifier(f.getAuthorityKeyIdentifier())
 				.withSubjectOnlyInAlternativeName(f.isSubjectOnlyInAlternativeName())
 				.withSubjectPublicKeyInfo(f.getSubjectPublicKeyInfo());
 
@@ -60,7 +61,7 @@ public class CertificationRequestInitActionProcessor implements ActionProcessor 
 				if(f.isCaSet())builder = builder.withCa(f.isCa());
 				if(f.isKeyUsageSet())builder=builder.withKeyUsage(f.getKeyUsage());
 		
-				PrivateKeyEntry privateKeyEntry = contactManager.getMainMessagePrivateKeyEntry();
+				PrivateKeyEntry privateKeyEntry = userAccount.getAnyMessagePrivateKeyEntry();
 				PKIMessage pkiMessage = builder.build(privateKeyEntry, f.getPrivateKeyEntryToCertify());
 				cmpRequest = new CMPRequest(pkiMessage.getHeader().getTransactionID(), 
 						new DERGeneralizedTime(new Date()), new ASN1Integer(PKIBody.TYPE_CERT_REQ), new DERUTF8String(workflowId));

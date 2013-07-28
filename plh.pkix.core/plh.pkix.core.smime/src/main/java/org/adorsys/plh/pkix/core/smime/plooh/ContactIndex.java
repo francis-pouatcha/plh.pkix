@@ -45,7 +45,6 @@ public class ContactIndex {
 	
 	private Map<KeyStoreAlias, String> keyAlias2KeyStoreId = new HashMap<KeyStoreAlias, String>();
 	private Map<String, String> publicKeyId2KeyStoreId = new HashMap<String, String>();
-	private Map<String, String> subjectKeyId2KeyStoreId = new HashMap<String, String>();
 
 	public void addContact(String keyStoreId, KeyStoreAlias keyStoreAlias){
 		String keyStoreIdFound = keyAlias2KeyStoreId.get(keyStoreAlias);
@@ -61,16 +60,8 @@ public class ContactIndex {
 					" so it can not be indexed for " + keyStoreId);
 		}
 
-		String subjectKeyIdHex = keyStoreAlias.getSubjectKeyIdHex();
-		keyStoreIdFound = subjectKeyId2KeyStoreId.get(subjectKeyIdHex);
-		if(keyStoreIdFound!=null && !StringUtils.equalsIgnoreCase(keyStoreIdFound, keyStoreId)){
-			throw new IllegalArgumentException("subject key id already included in keystore : "+keyStoreIdFound + 
-					" so it can not be indexed for " + keyStoreId);
-		}
-
 		keyAlias2KeyStoreId.put(keyStoreAlias, keyStoreId);
 		publicKeyId2KeyStoreId.put(publicKeyIdHex, keyStoreId);
-		subjectKeyId2KeyStoreId.put(subjectKeyIdHex, keyStoreId);
 	}
 
 	public Set<KeyStoreAlias> keyStoreAliases(){
@@ -78,14 +69,14 @@ public class ContactIndex {
 	}
 	
 	public String findByKeyStoreAlias(KeyStoreAlias keyStoreAlias){
-		return keyAlias2KeyStoreId.get(keyStoreAlias);
+		String keyStoreId = keyAlias2KeyStoreId.get(keyStoreAlias);
+		if(keyStoreId!=null) return keyStoreId;
+		String publicKeyIdHex = keyStoreAlias.getPublicKeyIdHex();
+		if(publicKeyIdHex!=null) return publicKeyId2KeyStoreId.get(publicKeyIdHex);
+		return null;
 	}
 	
 	public String findByPublicKeyId(String publicKeyIdHex){
 		return publicKeyId2KeyStoreId.get(publicKeyIdHex);
-	}
-	
-	public String findBySubjectKeyId(String subjectKeyIdHex){
-		return subjectKeyId2KeyStoreId.get(subjectKeyIdHex);
 	}
 }

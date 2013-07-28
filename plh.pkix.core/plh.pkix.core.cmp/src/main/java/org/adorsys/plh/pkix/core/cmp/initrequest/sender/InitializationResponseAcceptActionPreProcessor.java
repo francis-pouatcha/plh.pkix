@@ -21,7 +21,6 @@ import org.adorsys.plh.pkix.core.utils.exception.PlhUncheckedException;
 import org.adorsys.plh.pkix.core.utils.store.CertAndCertPath;
 import org.bouncycastle.asn1.DERGeneralizedTime;
 import org.bouncycastle.asn1.DERIA5String;
-import org.bouncycastle.i18n.ErrorBundle;
 
 /**
  * Prepares and invoke the {@link InitializationResponseAcceptActionExecutor}. Forwards control

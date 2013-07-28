@@ -5,13 +5,13 @@ import java.util.Date;
 import org.adorsys.plh.pkix.core.cmp.stores.CMPRequest;
 import org.adorsys.plh.pkix.core.cmp.stores.IncomingRequests;
 import org.adorsys.plh.pkix.core.cmp.stores.ProcessingStatus;
+import org.adorsys.plh.pkix.core.smime.plooh.UserAccount;
 import org.adorsys.plh.pkix.core.utils.BuilderChecker;
 import org.adorsys.plh.pkix.core.utils.V3CertificateUtils;
 import org.adorsys.plh.pkix.core.utils.action.ActionContext;
 import org.adorsys.plh.pkix.core.utils.action.ActionProcessor;
 import org.adorsys.plh.pkix.core.utils.asn1.ASN1CertImportResult;
 import org.adorsys.plh.pkix.core.utils.asn1.ASN1MessageBundles;
-import org.adorsys.plh.pkix.core.utils.contact.ContactManager;
 import org.adorsys.plh.pkix.core.utils.exception.PlhCheckedException;
 import org.bouncycastle.asn1.ASN1OctetString;
 import org.bouncycastle.asn1.DERGeneralizedTime;
@@ -31,10 +31,10 @@ public class IncomingCertAnnImportActionProcessor implements
 
 		checker.checkNull(actionContext);
 		
-		ContactManager contactManager = actionContext.get(ContactManager.class);
+		UserAccount userAccount = actionContext.get(UserAccount.class);
 		IncomingRequests requests = actionContext.get(IncomingRequests.class);
 		CMPRequest cmpRequest = actionContext.get(CMPRequest.class);
-		checker.checkNull(cmpRequest,requests, contactManager);
+		checker.checkNull(cmpRequest,requests, userAccount);
 		
 		ASN1OctetString transactionID = cmpRequest.getTransactionID();
 		requests.lock(cmpRequest);
@@ -48,7 +48,7 @@ public class IncomingCertAnnImportActionProcessor implements
 			X509CertificateHolder certificateHolder = V3CertificateUtils.getX509CertificateHolder(x509v3pkCert);
 			importResult = new ASN1CertImportResult(x509v3pkCert, transactionID, new DERGeneralizedTime(new Date()));
 			try {
-				contactManager.addCertEntry(certificateHolder);
+				userAccount.getTrustedContactManager().addCertEntry(certificateHolder);
 			} catch (PlhCheckedException e) {
 				importResult.setErrors(new ASN1MessageBundles(e.getErrorMessage()));
 			}

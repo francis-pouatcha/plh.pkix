@@ -8,7 +8,6 @@ import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.ASN1OctetString;
 import org.bouncycastle.asn1.crmf.CertTemplate;
-import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.AuthorityKeyIdentifier;
 import org.bouncycastle.asn1.x509.Extension;
 import org.bouncycastle.asn1.x509.Extensions;
@@ -90,6 +89,12 @@ public class KeyIdUtils {
 	public static String authorityKeyIdentifierToString(AuthorityKeyIdentifier authorityKeyIdentifier){
     	return authorityKeyIdentifier==null?null:hexEncode(authorityKeyIdentifier.getKeyIdentifier());
 	}
+    public static String authoritySerialNumberToString(AuthorityKeyIdentifier authorityKeyIdentifier){
+    	if(authorityKeyIdentifier==null) return null;
+    	BigInteger authorityCertSerialNumber = authorityKeyIdentifier.getAuthorityCertSerialNumber();
+    	if(authorityCertSerialNumber==null) return null;
+    	return authorityCertSerialNumber.toString(16).toUpperCase();
+    }
     
     public static SubjectKeyIdentifier readSubjectKeyIdentifier(X509CertificateHolder certHldr) {
     	if(certHldr==null)return null;
@@ -137,10 +142,10 @@ public class KeyIdUtils {
     	if(value==null) return null;
     	return value.getPositiveValue().toString(16);
     }
-    
-    public static String readEndEntityIdentifier(X509CertificateHolder certHldr){
-    	X500Name subjectDN = X500NameHelper.readSubjectDN(certHldr);
-    	if(subjectDN==null) return null;
-    	return X500NameHelper.readUniqueIdentifier(subjectDN);
-    }
+//    
+//    public static String readEndEntityIdentifier(X509CertificateHolder certHldr){
+//    	X500Name subjectDN = X500NameHelper.readSubjectDN(certHldr);
+//    	if(subjectDN==null) return null;
+//    	return X500NameHelper.readUniqueIdentifier(subjectDN);
+//    }
 }

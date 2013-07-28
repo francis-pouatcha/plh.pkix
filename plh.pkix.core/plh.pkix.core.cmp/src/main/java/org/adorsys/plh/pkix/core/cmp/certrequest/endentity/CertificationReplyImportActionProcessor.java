@@ -7,6 +7,7 @@ import java.util.List;
 import org.adorsys.plh.pkix.core.cmp.stores.CMPRequest;
 import org.adorsys.plh.pkix.core.cmp.stores.OutgoingRequests;
 import org.adorsys.plh.pkix.core.cmp.stores.ProcessingStatus;
+import org.adorsys.plh.pkix.core.smime.plooh.UserAccount;
 import org.adorsys.plh.pkix.core.utils.BuilderChecker;
 import org.adorsys.plh.pkix.core.utils.UUIDUtils;
 import org.adorsys.plh.pkix.core.utils.V3CertificateUtils;
@@ -20,7 +21,6 @@ import org.adorsys.plh.pkix.core.utils.asn1.ASN1CertValidationResult;
 import org.adorsys.plh.pkix.core.utils.asn1.ASN1CertValidationResults;
 import org.adorsys.plh.pkix.core.utils.asn1.ASN1CertificateChain;
 import org.adorsys.plh.pkix.core.utils.asn1.ASN1MessageBundles;
-import org.adorsys.plh.pkix.core.utils.contact.ContactManager;
 import org.adorsys.plh.pkix.core.utils.exception.PlhCheckedException;
 import org.bouncycastle.asn1.ASN1OctetString;
 import org.bouncycastle.asn1.DERGeneralizedTime;
@@ -37,10 +37,10 @@ public class CertificationReplyImportActionProcessor implements
 
 		checker.checkNull(actionContext);
 		
-		ContactManager contactManager = actionContext.get(ContactManager.class);
+		UserAccount userAccount = actionContext.get(UserAccount.class);
 		OutgoingRequests requests = actionContext.get(OutgoingRequests.class);
 		CMPRequest cmpRequest = actionContext.get(CMPRequest.class);
-		checker.checkNull(cmpRequest,requests, contactManager);
+		checker.checkNull(cmpRequest,requests, userAccount);
 		
 		ASN1OctetString transactionID = cmpRequest.getTransactionID();
 		
@@ -65,7 +65,7 @@ public class CertificationReplyImportActionProcessor implements
 				try {
 					importResult = new ASN1CertImportResult(certArray[0], transactionID, new DERGeneralizedTime(new Date()));
 					importResults.add(importResult);
-					contactManager.importIssuedCertificate(certArray);
+					userAccount.getPrivateContactManager().importIssuedCertificate(certArray);
 
 					// add all ca to the contact db
 					for (int i = 1; i < certArray.length; i++) {
@@ -74,7 +74,7 @@ public class CertificationReplyImportActionProcessor implements
 						importResults.add(importResult);
 						X509CertificateHolder certificateHolder = V3CertificateUtils.getX509CertificateHolder(certificate);
 						try {
-							contactManager.addCertEntry(certificateHolder);
+							userAccount.getTrustedContactManager().addCertEntry(certificateHolder);
 						} catch (PlhCheckedException e) {
 							importResult.setErrors(new ASN1MessageBundles(e.getErrorMessage()));
 						}

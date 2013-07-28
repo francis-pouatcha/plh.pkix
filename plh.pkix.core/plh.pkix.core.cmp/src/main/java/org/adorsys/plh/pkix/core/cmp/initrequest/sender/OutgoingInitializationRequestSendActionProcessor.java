@@ -16,7 +16,6 @@ import org.adorsys.plh.pkix.core.utils.exception.PlhUncheckedException;
 import org.bouncycastle.asn1.DERGeneralizedTime;
 import org.bouncycastle.asn1.DERIA5String;
 import org.bouncycastle.asn1.cmp.PKIMessage;
-import org.bouncycastle.i18n.ErrorBundle;
 
 public class OutgoingInitializationRequestSendActionProcessor implements ActionProcessor {
 

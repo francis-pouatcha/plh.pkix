@@ -7,6 +7,7 @@ import org.adorsys.plh.pkix.core.cmp.stores.CMPRequest;
 import org.adorsys.plh.pkix.core.cmp.stores.ErrorMessageHelper;
 import org.adorsys.plh.pkix.core.cmp.stores.OutgoingRequests;
 import org.adorsys.plh.pkix.core.cmp.stores.ProcessingStatus;
+import org.adorsys.plh.pkix.core.smime.plooh.UserAccount;
 import org.adorsys.plh.pkix.core.utils.BuilderChecker;
 import org.adorsys.plh.pkix.core.utils.UUIDUtils;
 import org.adorsys.plh.pkix.core.utils.action.ActionContext;
@@ -15,7 +16,6 @@ import org.adorsys.plh.pkix.core.utils.asn1.ASN1Action;
 import org.adorsys.plh.pkix.core.utils.asn1.ASN1CertChainImportResult;
 import org.adorsys.plh.pkix.core.utils.asn1.ASN1CertChainImprortResults;
 import org.adorsys.plh.pkix.core.utils.asn1.ASN1CertImportResult;
-import org.adorsys.plh.pkix.core.utils.contact.ContactManager;
 import org.adorsys.plh.pkix.core.utils.exception.PlhUncheckedException;
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.DERGeneralizedTime;
@@ -28,7 +28,6 @@ import org.bouncycastle.asn1.x509.Certificate;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.cmp.GeneralPKIMessage;
 import org.bouncycastle.cert.cmp.ProtectedPKIMessage;
-import org.bouncycastle.i18n.ErrorBundle;
 
 public class OutgoingCertAnnActionProcessor implements
 		ActionProcessor {
@@ -39,8 +38,8 @@ public class OutgoingCertAnnActionProcessor implements
 		checker.checkNull(actionContext);
 		CMPRequest cmpRequest = actionContext.get(CMPRequest.class);
 		OutgoingRequests requests = actionContext.get(OutgoingRequests.class);
-		ContactManager contactManager = actionContext.get(ContactManager.class);
-		checker.checkNull(cmpRequest, requests, contactManager);
+		UserAccount userAccount = actionContext.get(UserAccount.class);
+		checker.checkNull(cmpRequest, requests, userAccount);
 
 		requests.lock(cmpRequest);
 		boolean execueAction = false;
@@ -52,7 +51,7 @@ public class OutgoingCertAnnActionProcessor implements
 			if(actionData==null) return;
 			ASN1CertChainImprortResults certChainImprortResults = ASN1CertChainImprortResults.getInstance(actionData);
 			certChainImprortResultArray = certChainImprortResults.toArray();
-			privateKeyEntry = contactManager.getMainMessagePrivateKeyEntry();
+			privateKeyEntry = userAccount.getAnyMessagePrivateKeyEntry();
 			
 			// we assume receiver is the issuing instance
 			PKIMessage response = requests.loadResponse(cmpRequest);

@@ -30,7 +30,7 @@ public class PrivateKeyEntryFactory {
 				.withKeyStoreWraper(keyStoreWraper).build();
 
 		contactManager = new ContactManagerImpl(keyStoreWraper);
-		KeyStoreAlias keyStoreAlias = new KeyStoreAlias(null, null, null, null,
+		KeyStoreAlias keyStoreAlias = new KeyStoreAlias(null, null,
 				null, KeyStoreAlias.PurposeEnum.ME, PrivateKeyEntry.class);
 		privateKeyEntry = contactManager.findEntryByAlias(
 				PrivateKeyEntry.class, keyStoreAlias);

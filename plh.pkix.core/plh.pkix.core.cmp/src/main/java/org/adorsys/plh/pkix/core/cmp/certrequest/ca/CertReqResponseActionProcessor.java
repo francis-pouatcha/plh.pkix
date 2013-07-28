@@ -13,8 +13,10 @@ import org.adorsys.plh.pkix.core.cmp.stores.CMPRequest;
 import org.adorsys.plh.pkix.core.cmp.stores.ErrorMessageHelper;
 import org.adorsys.plh.pkix.core.cmp.stores.IncomingRequests;
 import org.adorsys.plh.pkix.core.cmp.stores.ProcessingStatus;
+import org.adorsys.plh.pkix.core.smime.plooh.UserAccount;
 import org.adorsys.plh.pkix.core.utils.BuilderChecker;
 import org.adorsys.plh.pkix.core.utils.KeyIdUtils;
+import org.adorsys.plh.pkix.core.utils.KeyStoreAlias;
 import org.adorsys.plh.pkix.core.utils.ProviderUtils;
 import org.adorsys.plh.pkix.core.utils.UUIDUtils;
 import org.adorsys.plh.pkix.core.utils.V3CertificateUtils;
@@ -25,7 +27,6 @@ import org.adorsys.plh.pkix.core.utils.asn1.ASN1Action;
 import org.adorsys.plh.pkix.core.utils.asn1.ASN1CertificateChain;
 import org.adorsys.plh.pkix.core.utils.asn1.ASN1CertificationResult;
 import org.adorsys.plh.pkix.core.utils.asn1.ASN1CertificationResults;
-import org.adorsys.plh.pkix.core.utils.contact.ContactManager;
 import org.adorsys.plh.pkix.core.utils.exception.PlhUncheckedException;
 import org.bouncycastle.asn1.ASN1OctetString;
 import org.bouncycastle.asn1.DERGeneralizedTime;
@@ -54,7 +55,6 @@ import org.bouncycastle.cert.cmp.ProtectedPKIMessageBuilder;
 import org.bouncycastle.cert.crmf.CRMFException;
 import org.bouncycastle.cert.crmf.jcajce.JcaEncryptedValueBuilder;
 import org.bouncycastle.cert.crmf.jcajce.JceCRMFEncryptorBuilder;
-import org.bouncycastle.i18n.ErrorBundle;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OutputEncryptor;
 import org.bouncycastle.operator.jcajce.JceAsymmetricKeyWrapper;
@@ -69,11 +69,10 @@ public class CertReqResponseActionProcessor implements ActionProcessor {
 
 		checker.checkNull(context);
 
-		ContactManager contactManager = context.get(ContactManager.class);
-
+		UserAccount userAccount = context.get(UserAccount.class);
 		IncomingRequests requests = context.get(IncomingRequests.class);
 		CMPRequest cmpRequest = context.get(CMPRequest.class);
-		checker.checkNull(cmpRequest, requests);
+		checker.checkNull(cmpRequest, requests, userAccount);
 
 		boolean executeAction = false;
 		requests.lock(cmpRequest);
@@ -141,22 +140,14 @@ public class CertReqResponseActionProcessor implements ActionProcessor {
 			GeneralName certificateRecipient = header.getSender();
 			ASN1OctetString myPublicKeyIdentifier = header.getRecipKID();
 			PrivateKeyEntry privateKeyEntry = null;
-			if (myPublicKeyIdentifier != null)
-				privateKeyEntry = contactManager
-						.findEntryByPublicKeyIdentifier(PrivateKeyEntry.class,
-								myPublicKeyIdentifier.getOctets());
-
-			if (privateKeyEntry == null && header.getRecipient() != null) {
-				GeneralName me = header.getRecipient();
-				String myEmail = X500NameHelper.readEmail(me);
-				if (myEmail != null)
-					privateKeyEntry = contactManager.findMessageEntryByEmail(
-							PrivateKeyEntry.class, myEmail);
+			if (myPublicKeyIdentifier != null){
+				String publicKeyIdHex = KeyIdUtils.hexEncode(myPublicKeyIdentifier);
+				KeyStoreAlias keyStoreAlias = new KeyStoreAlias(publicKeyIdHex, null, null, KeyStoreAlias.PurposeEnum.ME, PrivateKeyEntry.class);
+				privateKeyEntry = userAccount.getPrivateContactManager().findEntryByAlias(PrivateKeyEntry.class, keyStoreAlias);
 			}
 
 			if (privateKeyEntry == null)
-				privateKeyEntry = contactManager
-						.getMainMessagePrivateKeyEntry();
+				privateKeyEntry = userAccount.getAnyMessagePrivateKeyEntry();
 
 			Certificate myCertificate = privateKeyEntry.getCertificate();
 			X509CertificateHolder myCertificateHolder = V3CertificateUtils

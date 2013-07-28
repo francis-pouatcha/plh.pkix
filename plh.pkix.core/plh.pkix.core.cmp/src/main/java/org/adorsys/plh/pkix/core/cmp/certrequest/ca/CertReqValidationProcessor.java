@@ -9,6 +9,7 @@ import org.adorsys.plh.pkix.core.cmp.stores.CMPRequest;
 import org.adorsys.plh.pkix.core.cmp.stores.ErrorMessageHelper;
 import org.adorsys.plh.pkix.core.cmp.stores.IncomingRequests;
 import org.adorsys.plh.pkix.core.cmp.stores.ProcessingStatus;
+import org.adorsys.plh.pkix.core.smime.plooh.UserAccount;
 import org.adorsys.plh.pkix.core.utils.BuilderChecker;
 import org.adorsys.plh.pkix.core.utils.KeyIdUtils;
 import org.adorsys.plh.pkix.core.utils.UUIDUtils;
@@ -17,7 +18,6 @@ import org.adorsys.plh.pkix.core.utils.action.ActionProcessor;
 import org.adorsys.plh.pkix.core.utils.asn1.ASN1Action;
 import org.adorsys.plh.pkix.core.utils.asn1.ASN1CertValidationResult;
 import org.adorsys.plh.pkix.core.utils.asn1.ASN1CertValidationResults;
-import org.adorsys.plh.pkix.core.utils.contact.ContactManager;
 import org.adorsys.plh.pkix.core.utils.exception.PlhUncheckedException;
 import org.adorsys.plh.pkix.core.utils.store.PKISignedMessageValidator;
 import org.adorsys.plh.pkix.core.utils.store.ValidationResult;
@@ -28,7 +28,6 @@ import org.bouncycastle.asn1.DERIA5String;
 import org.bouncycastle.asn1.DERUTF8String;
 import org.bouncycastle.asn1.cmp.PKIBody;
 import org.bouncycastle.asn1.cmp.PKIMessage;
-import org.bouncycastle.i18n.ErrorBundle;
 
 public class CertReqValidationProcessor implements ActionProcessor {
 
@@ -38,9 +37,9 @@ public class CertReqValidationProcessor implements ActionProcessor {
 		checker.checkNull(actionContext);
 		
 		PKIMessage requestMessage = actionContext.get(PKIMessage.class);
-		ContactManager contactManager = actionContext.get(ContactManager.class);
+		UserAccount userAccount = actionContext.get(UserAccount.class);
 		IncomingRequests requests = actionContext.get(IncomingRequests.class);
-		checker.checkNull(requestMessage,requests, contactManager);
+		checker.checkNull(requestMessage,requests, userAccount);
 
 		// store the incoming response
 		ASN1OctetString transactionID = requestMessage.getHeader().getTransactionID();
@@ -60,7 +59,7 @@ public class CertReqValidationProcessor implements ActionProcessor {
 		boolean executeAction = false;
 		requests.lock(cmpRequest);
 		try {
-			PKISignedMessageValidator signedMessageValidator = new PkiMessageChecker().check(requestMessage,contactManager);
+			PKISignedMessageValidator signedMessageValidator = new PkiMessageChecker().check(requestMessage,userAccount.getTrustedContactManager());
 			List<ValidationResult> results = signedMessageValidator.getResults();
 			List<ASN1CertValidationResult> certValidationResults = new ArrayList<ASN1CertValidationResult>();
 			for (ValidationResult validationResult : results) {

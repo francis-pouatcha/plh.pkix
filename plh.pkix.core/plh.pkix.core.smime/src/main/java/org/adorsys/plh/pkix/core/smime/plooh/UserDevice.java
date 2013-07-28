@@ -110,7 +110,7 @@ public final class UserDevice {
 	 * @throws SelectedFileNotADirectoryException 
 	 * @throws SelectedDirNotEmptyException 
 	 */
-	public UserAccount createUserAccount(File accountDir) throws SelectedFileNotADirectoryException, SelectedDirNotEmptyException{
+	public UserAccount createUserAccount(File accountDir) throws SelectedFileNotADirectoryException{
 		
 		// Generate a password
 		FileWrapper accountDirWrapper = userDeviceContainer.newAbsoluteFile(accountDir.getAbsolutePath());
@@ -159,7 +159,7 @@ public final class UserDevice {
 		return accounts;
 	}
 
-	public UserAccount loadUserAccount(X509CertificateHolder accountCertificateHolder) throws SelectedFileNotADirectoryException, SelectedDirNotEmptyException{
+	public UserAccount loadUserAccount(X509CertificateHolder accountCertificateHolder) throws SelectedFileNotADirectoryException{
 		List<String> uris = X500NameHelper.readSubjectURIsFromAltName(accountCertificateHolder);
 		String accountDirURI =null;
 		for (String string : uris) {

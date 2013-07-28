@@ -6,7 +6,6 @@ import java.security.cert.CertificateException;
 import java.util.List;
 import java.util.Properties;
 
-import org.adorsys.plh.pkix.core.smime.plooh.SelectedDirNotEmptyException;
 import org.adorsys.plh.pkix.core.smime.plooh.SelectedFileNotADirectoryException;
 import org.adorsys.plh.pkix.core.smime.plooh.SimpleKeyStorePasswordsCallbackHandler;
 import org.adorsys.plh.pkix.core.smime.plooh.UserAccount;
@@ -27,12 +26,12 @@ public class UserAccountTest {
 	
 	
 	@Test
-	public void test() throws CertificateException, KeyStoreException, PlhCheckedException, SelectedFileNotADirectoryException, SelectedDirNotEmptyException {
+	public void test() throws CertificateException, KeyStoreException, PlhCheckedException, SelectedFileNotADirectoryException {
 		newUserAccount("francis");
 		loadUserAccount("francis");
 	}
 	
-	private static UserAccount newUserAccount(String name) throws SelectedFileNotADirectoryException, SelectedDirNotEmptyException{
+	private static UserAccount newUserAccount(String name) throws SelectedFileNotADirectoryException{
 		// nadege
 		Properties properties = new Properties();
 		properties.put(UserDevice.SYSTEM_PROPERTY_KEY_USER_HOME, new File(testDir, name+"Device").getPath());
@@ -45,7 +44,7 @@ public class UserAccountTest {
 		
 	}
 	
-	private static UserAccount loadUserAccount(String name) throws SelectedFileNotADirectoryException, SelectedDirNotEmptyException{
+	private static UserAccount loadUserAccount(String name) throws SelectedFileNotADirectoryException{
 		// nadege
 		Properties properties = new Properties();
 		properties.put(UserDevice.SYSTEM_PROPERTY_KEY_USER_HOME, new File(testDir, name+"Device").getPath());

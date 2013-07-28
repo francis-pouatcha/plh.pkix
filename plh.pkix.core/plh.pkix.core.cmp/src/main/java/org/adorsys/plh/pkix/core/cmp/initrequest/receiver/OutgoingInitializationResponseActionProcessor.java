@@ -13,15 +13,17 @@ import org.adorsys.plh.pkix.core.cmp.stores.ErrorMessageHelper;
 import org.adorsys.plh.pkix.core.cmp.stores.IncomingRequests;
 import org.adorsys.plh.pkix.core.cmp.stores.ProcessingStatus;
 import org.adorsys.plh.pkix.core.cmp.utils.OptionalValidityHolder;
+import org.adorsys.plh.pkix.core.smime.plooh.UserAccount;
 import org.adorsys.plh.pkix.core.utils.BuilderChecker;
 import org.adorsys.plh.pkix.core.utils.KeyIdUtils;
+import org.adorsys.plh.pkix.core.utils.KeyStoreAlias;
+import org.adorsys.plh.pkix.core.utils.KeyStoreAlias.PurposeEnum;
 import org.adorsys.plh.pkix.core.utils.UUIDUtils;
 import org.adorsys.plh.pkix.core.utils.V3CertificateUtils;
 import org.adorsys.plh.pkix.core.utils.X500NameHelper;
 import org.adorsys.plh.pkix.core.utils.action.ActionContext;
 import org.adorsys.plh.pkix.core.utils.action.ActionProcessor;
 import org.adorsys.plh.pkix.core.utils.asn1.ASN1Action;
-import org.adorsys.plh.pkix.core.utils.contact.ContactManager;
 import org.adorsys.plh.pkix.core.utils.exception.PlhUncheckedException;
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.ASN1OctetString;
@@ -52,7 +54,6 @@ import org.bouncycastle.cert.cmp.CMPException;
 import org.bouncycastle.cert.cmp.GeneralPKIMessage;
 import org.bouncycastle.cert.cmp.ProtectedPKIMessage;
 import org.bouncycastle.cert.cmp.ProtectedPKIMessageBuilder;
-import org.bouncycastle.i18n.ErrorBundle;
 import org.bouncycastle.operator.ContentSigner;
 
 public class OutgoingInitializationResponseActionProcessor implements ActionProcessor {
@@ -62,12 +63,11 @@ public class OutgoingInitializationResponseActionProcessor implements ActionProc
 	public void process(ActionContext context) {
 
 		checker.checkNull(context);
-
-		ContactManager contactManager = context.get(ContactManager.class);
+		UserAccount userAccount = context.get(UserAccount.class);
 		
 		IncomingRequests requests = context.get(IncomingRequests.class);
 		CMPRequest cmpRequest = context.get(CMPRequest.class);
-		checker.checkNull(cmpRequest,requests, contactManager);
+		checker.checkNull(cmpRequest,requests, userAccount);
 		boolean executeAction = false;
 		requests.lock(cmpRequest);
 		try {
@@ -87,40 +87,41 @@ public class OutgoingInitializationResponseActionProcessor implements ActionProc
 				List<TrustedCertificateEntry> certEntries = null;
 				List<PrivateKeyEntry> keyEntries = null;
 				
+				PurposeEnum purpose = null;
+				if(V3CertificateUtils.isCaKey(certTemplate)){
+					purpose = PurposeEnum.CA;
+				} else if (V3CertificateUtils.isSmimeKey(certTemplate)){
+					purpose=PurposeEnum.ME;
+				}
 				// we start searching with the public key
 				SubjectKeyIdentifier subjectKeyIdentifier = KeyIdUtils.createPublicKeyIdentifier(certTemplate.getPublicKey());
 				if(subjectKeyIdentifier==null)
 					subjectKeyIdentifier = KeyIdUtils.readSubjectKeyIdentifier(certTemplate);
 
 				if(subjectKeyIdentifier!=null){
-					byte[] keyIdentifier = subjectKeyIdentifier.getKeyIdentifier();
-					certEntries = contactManager.findEntriesBySubjectKeyIdentifier(TrustedCertificateEntry.class, keyIdentifier);
-					keyEntries = contactManager.findEntriesBySubjectKeyIdentifier(PrivateKeyEntry.class, keyIdentifier);
+					String subjectKeyIdHex = KeyIdUtils.subjectKeyIdentifierToString(subjectKeyIdentifier);
+					KeyStoreAlias privateKeyStoreAlias = new KeyStoreAlias(subjectKeyIdHex, null, null, purpose, PrivateKeyEntry.class);
+					keyEntries = userAccount.getPrivateContactManager().findEntriesByAlias(PrivateKeyEntry.class, privateKeyStoreAlias);
+					KeyStoreAlias trustedCertStoreAlias = new KeyStoreAlias(subjectKeyIdHex, null, null, purpose, TrustedCertificateEntry.class);
+					certEntries = userAccount.getTrustedContactManager().findEntriesByAlias(TrustedCertificateEntry.class, trustedCertStoreAlias);
 				}
-	
-				// We try with the subject of certificate read
-				// either from the subject field or from the subjectAltNameField
-				if((certEntries==null || certEntries.isEmpty()) && (keyEntries==null || keyEntries.isEmpty())){
-					X500Name subjectDN = X500NameHelper.readSubjectDN(certTemplate);
-					if(subjectDN!=null){
-						certEntries = contactManager.findCaEntriesBySubject(TrustedCertificateEntry.class, subjectDN);
-						keyEntries = contactManager.findCaEntriesBySubject(PrivateKeyEntry.class, subjectDN);
-					}
-				}
-	
+
 				// lets try with the subject email if the DN does not produce
 				// any result.
 				if((certEntries==null || certEntries.isEmpty()) && (keyEntries==null || keyEntries.isEmpty())){
 					List<String> subjectEmails = X500NameHelper.readSubjectEmails(certTemplate);
 					if(subjectEmails!=null && !subjectEmails.isEmpty()){
 						String[] emails = subjectEmails.toArray(new String[subjectEmails.size()]);
-						certEntries = contactManager.findMessageEntriesByEmail(TrustedCertificateEntry.class, emails);
-						keyEntries = contactManager.findMessageEntriesByEmail(PrivateKeyEntry.class, emails);
+						certEntries = userAccount.getTrustedContactManager().findEntriesByEmail(TrustedCertificateEntry.class, emails);
+						keyEntries = userAccount.getPrivateContactManager().findEntriesByEmail(PrivateKeyEntry.class, emails);
 					}
 				}
 				
 				if((certEntries==null || certEntries.isEmpty()) && (keyEntries==null || keyEntries.isEmpty()))
 					continue;
+
+				certEntries = filterCertContacts(certEntries, purpose);
+				keyEntries = filterPrivateKeyContacts(keyEntries, purpose);
 				
 				certEntries = filterContacts0(certEntries, certTemplate.getValidity());
 				keyEntries = filterContacts(keyEntries, certTemplate.getValidity());
@@ -133,9 +134,6 @@ public class OutgoingInitializationResponseActionProcessor implements ActionProc
 				
 				certEntries = filterContactsByIssuer0(certEntries, certTemplate.getIssuer());
 				keyEntries = filterContactsByIssuer(keyEntries, certTemplate.getIssuer());
-				
-				certEntries = filterContactsByIssuerEmails0(certEntries, X500NameHelper.readIssuerEmails(certTemplate));
-				keyEntries = filterContactsByIssuerEmails(keyEntries, X500NameHelper.readIssuerEmails(certTemplate));
 	
 				if((certEntries==null || certEntries.isEmpty()) && (keyEntries==null || keyEntries.isEmpty()))
 					continue;
@@ -173,22 +171,18 @@ public class OutgoingInitializationResponseActionProcessor implements ActionProc
 			PrivateKeyEntry privateKeyEntry = null;
 			
 			PKIHeader header = protectedPKIMessage.getHeader();
-			GeneralName certificateRecipient = header.getSender();
 			ASN1OctetString myPublicKeyIdentifier = header.getRecipKID();
-			if(myPublicKeyIdentifier!=null)
-				privateKeyEntry = contactManager.findEntryByPublicKeyIdentifier(PrivateKeyEntry.class, myPublicKeyIdentifier.getOctets());
-
-			if(privateKeyEntry==null && header.getRecipient()!=null){
-				GeneralName me = header.getRecipient();
-				String myEmail = X500NameHelper.readEmail(me);
-				if(myEmail!=null)
-					privateKeyEntry = contactManager.findMessageEntryByEmail(PrivateKeyEntry.class, myEmail);
+			if(myPublicKeyIdentifier!=null){
+				String publicKeyIdHex = KeyIdUtils.hexEncode(myPublicKeyIdentifier);
+				KeyStoreAlias keyStoreAlias = new KeyStoreAlias(publicKeyIdHex, null, null, PurposeEnum.ME, PrivateKeyEntry.class);
+				privateKeyEntry = userAccount.getPrivateContactManager().findEntryByAlias(PrivateKeyEntry.class, keyStoreAlias);
 			}
-			
+
 			if(privateKeyEntry==null)
-				privateKeyEntry = contactManager.getMainMessagePrivateKeyEntry();
+				privateKeyEntry = userAccount.getAnyMessagePrivateKeyEntry();
 			
 			
+			GeneralName certificateRecipient = header.getSender();
 			Certificate myCertificate = privateKeyEntry.getCertificate();
 			X509CertificateHolder myCertificateHolder = V3CertificateUtils.getX509CertificateHolder(myCertificate);
 			X500Name subjectDN = X500NameHelper.readSubjectDN(myCertificateHolder);
@@ -226,9 +220,6 @@ public class OutgoingInitializationResponseActionProcessor implements ActionProc
 			executeAction = true;
 		} catch(PlhUncheckedException e){
 			ErrorMessageHelper.processError(cmpRequest, requests, e.getErrorMessage());
-//		} catch (RuntimeException r){
-//			ErrorBundle errorMessage = PlhUncheckedException.toErrorMessage(r, getClass().getName()+"#process");
-//			ErrorMessageHelper.processError(cmpRequest, requests, errorMessage);
 		} finally {
 			requests.unlock(cmpRequest);
 		} 
@@ -267,43 +258,6 @@ public class OutgoingInitializationResponseActionProcessor implements ActionProc
 			X509CertificateHolder certificateHolder = V3CertificateUtils.getX509CertificateHolder(entry.getTrustedCertificate());
 			if(V3CertificateUtils.isValid(certificateHolder, validityHolder.getNotBeforeAsDate(), validityHolder.getNotAfterAsDate()))
 				result.add(entry);
-		}
-		return result;
-	}
-
-	private List<PrivateKeyEntry> filterContactsByIssuerEmails(
-			List<PrivateKeyEntry> foundCertificates,
-			List<String> issuerEmails) {
-		if(issuerEmails==null || issuerEmails.isEmpty()) return foundCertificates;
-		
-		List<PrivateKeyEntry> result = new ArrayList<PrivateKeyEntry>();
-		for (PrivateKeyEntry entry : foundCertificates) {
-			X509CertificateHolder certificateHolder = V3CertificateUtils.getX509CertificateHolder(entry.getCertificate());
-			List<String> readIssuerEmails = X500NameHelper.readIssuerEmails(certificateHolder);
-			for (String issuerEmail : issuerEmails) {
-				if(readIssuerEmails.contains(issuerEmail)){
-					result.add(entry);
-					break;
-				}
-			}
-		}
-		return result;
-	}
-	private List<TrustedCertificateEntry> filterContactsByIssuerEmails0(
-			List<TrustedCertificateEntry> foundCertificates,
-			List<String> issuerEmails) {
-		if(issuerEmails==null || issuerEmails.isEmpty()) return foundCertificates;
-		
-		List<TrustedCertificateEntry> result = new ArrayList<TrustedCertificateEntry>();
-		for (TrustedCertificateEntry entry : foundCertificates) {
-			X509CertificateHolder certificateHolder = V3CertificateUtils.getX509CertificateHolder(entry.getTrustedCertificate());
-			List<String> readIssuerEmails = X500NameHelper.readIssuerEmails(certificateHolder);
-			for (String issuerEmail : issuerEmails) {
-				if(readIssuerEmails.contains(issuerEmail)){
-					result.add(entry);
-					break;
-				}
-			}
 		}
 		return result;
 	}
@@ -385,6 +339,31 @@ public class OutgoingInitializationResponseActionProcessor implements ActionProc
 			byte[] asByteString = KeyIdUtils.readAuthorityKeyIdentifierAsByteString(certificateHolder);
 			if(Arrays.equals(searchInput, asByteString))
 				result.add(entry);
+		}
+		return result;
+	}
+	
+	private List<PrivateKeyEntry> filterPrivateKeyContacts(List<PrivateKeyEntry> foundEntries, PurposeEnum purpose){
+		if(purpose==null) return foundEntries;
+		List<PrivateKeyEntry> result = new ArrayList<PrivateKeyEntry>();
+		for (PrivateKeyEntry privateKeyEntry : foundEntries) {
+			if(purpose==PurposeEnum.CA && V3CertificateUtils.isCaKey(privateKeyEntry.getCertificate())){
+				result.add(privateKeyEntry);
+			} else if(purpose==PurposeEnum.ME && V3CertificateUtils.isSmimeKey(privateKeyEntry.getCertificate())){
+				result.add(privateKeyEntry);
+			}
+		}
+		return result;
+	}
+	private List<TrustedCertificateEntry> filterCertContacts(List<TrustedCertificateEntry> foundEntries, PurposeEnum purpose){
+		if(purpose==null) return foundEntries;
+		List<TrustedCertificateEntry> result = new ArrayList<TrustedCertificateEntry>();
+		for (TrustedCertificateEntry trustedCertificateEntry : foundEntries) {
+			if(purpose==PurposeEnum.CA && V3CertificateUtils.isCaKey(trustedCertificateEntry.getTrustedCertificate())){
+				result.add(trustedCertificateEntry);
+			} else if(purpose==PurposeEnum.ME && V3CertificateUtils.isSmimeKey(trustedCertificateEntry.getTrustedCertificate())){
+				result.add(trustedCertificateEntry);
+			}
 		}
 		return result;
 	}

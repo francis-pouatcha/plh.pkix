@@ -273,7 +273,7 @@ public class KeyStoreWraper {
 			chain[i] = V3CertificateUtils.getX509JavaCertificate(certificateHolderChain[i]);
 		}
 		//get the associated private key from the key store
-		List<KeyStoreAlias> existingAliases = KeyStoreAlias.selectBySubjectKeyIdentifier(aliases(), certificateHolderChain[0]);
+		List<KeyStoreAlias> existingAliases = KeyStoreAlias.selectByPublicKeyIdentifier(aliases(), certificateHolderChain[0]);
 		PrivateKeyEntry privateKeyEntry = null;
 		for (KeyStoreAlias keyStoreAlias : existingAliases) {
 			if(keyStoreAlias.isEntryType(PrivateKeyEntry.class))
@@ -543,5 +543,22 @@ public class KeyStoreWraper {
 			}
 		}
 		return null;
+	}
+	
+	public PrivateKeyEntry getMainCaPrivateKey(){
+		List<KeyStoreAlias> keyStoreAliases = keyStoreAliases();
+		for (KeyStoreAlias keyStoreAlias : keyStoreAliases) {
+			if(keyStoreAlias.isEntryType(PrivateKeyEntry.class)) {
+				PrivateKeyEntry privateKeyEntry = findEntryByAlias(PrivateKeyEntry.class, keyStoreAlias);
+				if(V3CertificateUtils.isCaKey(privateKeyEntry.getCertificate()) && 
+						V3CertificateUtils.isSelfSigned(privateKeyEntry.getCertificate())) return privateKeyEntry;
+			}
+		}
+		return null;
+	}
+	
+	public int size() throws KeyStoreException{
+		if(keyStore==null) return 0;
+		return keyStore.size();
 	}
 }

@@ -20,7 +20,6 @@ import org.adorsys.plh.pkix.core.utils.exception.PlhUncheckedException;
 import org.bouncycastle.asn1.DERGeneralizedTime;
 import org.bouncycastle.asn1.DERIA5String;
 import org.bouncycastle.asn1.crmf.CertTemplate;
-import org.bouncycastle.i18n.ErrorBundle;
 
 public class CertReqCertifyActionProcessor implements
 		ActionProcessor {

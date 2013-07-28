@@ -8,7 +8,6 @@ import java.security.cert.CertificateException;
 import java.util.List;
 import java.util.Properties;
 
-import org.adorsys.plh.pkix.core.smime.plooh.SelectedDirNotEmptyException;
 import org.adorsys.plh.pkix.core.smime.plooh.SelectedFileNotADirectoryException;
 import org.adorsys.plh.pkix.core.smime.plooh.SimpleKeyStorePasswordsCallbackHandler;
 import org.adorsys.plh.pkix.core.smime.plooh.UserAccount;
@@ -33,7 +32,7 @@ public class ContactIndexTest {
 	
 	
 	@Test
-	public void test() throws CertificateException, KeyStoreException, PlhCheckedException, SelectedFileNotADirectoryException, SelectedDirNotEmptyException {
+	public void test() throws CertificateException, KeyStoreException, PlhCheckedException, SelectedFileNotADirectoryException {
 		
 		// francis
 		UserAccount francisUserAccount = newUserAccount("francis");
@@ -44,8 +43,8 @@ public class ContactIndexTest {
 		// sandro
 		UserAccount sandroUserAccount = newUserAccount("sandro");
 
-		PrivateKeyEntry nadegePrivateKeyEntry = nadegeUserAccount.getPrivateContactManager().findEntryByAlias(PrivateKeyEntry.class, new KeyStoreAlias(null, null, null, null, null, KeyStoreAlias.PurposeEnum.ME, PrivateKeyEntry.class));
-		PrivateKeyEntry sandroPrivateKeyEntry = sandroUserAccount.getPrivateContactManager().findEntryByAlias(PrivateKeyEntry.class, new KeyStoreAlias(null, null, null, null, null, KeyStoreAlias.PurposeEnum.ME, PrivateKeyEntry.class));
+		PrivateKeyEntry nadegePrivateKeyEntry = nadegeUserAccount.getAnyMessagePrivateKeyEntry();
+		PrivateKeyEntry sandroPrivateKeyEntry = sandroUserAccount.getAnyMessagePrivateKeyEntry();
 
 		francisUserAccount.getTrustedContactManager().addCertEntry(V3CertificateUtils.getX509CertificateHolder(nadegePrivateKeyEntry.getCertificate()));
 		francisUserAccount.getTrustedContactManager().addCertEntry(V3CertificateUtils.getX509CertificateHolder(sandroPrivateKeyEntry.getCertificate()));
@@ -58,13 +57,13 @@ public class ContactIndexTest {
 		Assert.assertNotNull(francisContacts);
 	}
 	
-	private static UserAccount newUserAccount(String name) throws SelectedFileNotADirectoryException, SelectedDirNotEmptyException{
+	private static UserAccount newUserAccount(String name) throws SelectedFileNotADirectoryException{
 		UserDevice device = loadUserDevice(name);
 		return device.createUserAccount(new File(testDir, "accountDirs/"+name+"Account"));
 		
 	}
 	
-	private static UserAccount loadUserAccount(String name) throws SelectedFileNotADirectoryException, SelectedDirNotEmptyException{
+	private static UserAccount loadUserAccount(String name) throws SelectedFileNotADirectoryException{
 		UserDevice device = loadUserDevice(name);
 		List<X509CertificateHolder> accounts = device.getAccounts();
 		X509CertificateHolder accountCertificateHolder = accounts.iterator().next();
@@ -72,7 +71,7 @@ public class ContactIndexTest {
 		
 	}
 	
-	private static UserDevice loadUserDevice(String name) throws SelectedFileNotADirectoryException, SelectedDirNotEmptyException{
+	private static UserDevice loadUserDevice(String name) throws SelectedFileNotADirectoryException{
 		// nadege
 		Properties properties = new Properties();
 		properties.put(UserDevice.SYSTEM_PROPERTY_KEY_USER_HOME, new File(testDir, name+"Device").getPath());

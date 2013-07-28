@@ -11,6 +11,7 @@ import java.util.List;
 import org.adorsys.plh.pkix.core.cmp.initrequest.InitRequestMessages;
 import org.adorsys.plh.pkix.core.cmp.stores.CMPRequest;
 import org.adorsys.plh.pkix.core.cmp.stores.OutgoingRequests;
+import org.adorsys.plh.pkix.core.smime.plooh.UserAccount;
 import org.adorsys.plh.pkix.core.utils.BuilderChecker;
 import org.adorsys.plh.pkix.core.utils.KeyIdUtils;
 import org.adorsys.plh.pkix.core.utils.V3CertificateUtils;
@@ -69,8 +70,8 @@ public class InitializationResponseAcceptActionExecutor {
 
 		checker.checkDirty().checkNull(actionContext);
 		CMPRequest cmpRequest = actionContext.get(CMPRequest.class);
-		ContactManager contactManager = actionContext.get(ContactManager.class);
-		checker.checkNull(cmpRequest, contactManager);
+		UserAccount userAccount = actionContext.get(UserAccount.class);
+		checker.checkNull(cmpRequest, userAccount);
 		
 		OutgoingRequests requests = actionContext.get(OutgoingRequests.class);
 		PKIMessage pkiMessage = requests.loadRequest(cmpRequest);
@@ -131,6 +132,7 @@ public class InitializationResponseAcceptActionExecutor {
 
 		List<X509CertificateHolder> allCertificates = new ArrayList<X509CertificateHolder>(requestedCerts);
 		allCertificates.addAll(caCertificates);
+		ContactManager contactManager = userAccount.getTrustedContactManager();
 		PKIXParameters params = PKIXParametersFactory.makeParams(
 				contactManager.getTrustAnchors(),
 				contactManager.getCrl(),

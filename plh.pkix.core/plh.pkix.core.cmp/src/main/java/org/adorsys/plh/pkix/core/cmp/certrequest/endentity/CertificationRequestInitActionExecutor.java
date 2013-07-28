@@ -28,6 +28,7 @@ import org.bouncycastle.asn1.crmf.CertTemplate;
 import org.bouncycastle.asn1.crmf.CertTemplateBuilder;
 import org.bouncycastle.asn1.crmf.OptionalValidity;
 import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x509.AuthorityKeyIdentifier;
 import org.bouncycastle.asn1.x509.BasicConstraints;
 import org.bouncycastle.asn1.x509.Extension;
 import org.bouncycastle.asn1.x509.ExtensionsGenerator;
@@ -58,6 +59,7 @@ public class CertificationRequestInitActionExecutor {
 	// Receiver Information
 	private String receiverEmail;
 	private X509CertificateHolder receiverCertificate;
+    private AuthorityKeyIdentifier authorityKeyIdentifier;
 
 	// Certificate information
 	private boolean ca;
@@ -135,6 +137,10 @@ public class CertificationRequestInitActionExecutor {
 				} else {
 					extGenerator.addExtension(X509Extension.subjectAlternativeName, false, subjectAltNames);
 				}
+			}
+			
+			if(authorityKeyIdentifier!=null){
+				extGenerator.addExtension(X509Extension.authorityKeyIdentifier, true, authorityKeyIdentifier);				
 			}
 		} catch(IOException e){
             ErrorBundle msg = new ErrorBundle(CertRequestMessages.class.getName(),
@@ -266,6 +272,11 @@ public class CertificationRequestInitActionExecutor {
 		return this;
 	}	
 	
+	public CertificationRequestInitActionExecutor withAuthorityKeyIdentifier(
+			AuthorityKeyIdentifier authorityKeyIdentifier) {
+		this.authorityKeyIdentifier = authorityKeyIdentifier;
+		return this;
+	}
 	private void copyKeyUsage(X509CertificateHolder issuerCertificate) {
 		int ku = KeyUsageUtils.getKeyUsage(issuerCertificate);
 		if(ku!=-1)withKeyUsage(ku);

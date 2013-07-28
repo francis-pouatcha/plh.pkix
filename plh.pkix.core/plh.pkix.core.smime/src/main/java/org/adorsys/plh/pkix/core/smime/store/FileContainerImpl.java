@@ -18,6 +18,7 @@ import org.adorsys.plh.pkix.core.utils.BuilderChecker;
 import org.adorsys.plh.pkix.core.utils.KeyIdUtils;
 import org.adorsys.plh.pkix.core.utils.V3CertificateUtils;
 import org.adorsys.plh.pkix.core.utils.contact.ContactManager;
+import org.adorsys.plh.pkix.core.utils.exception.PlhCheckedException;
 import org.adorsys.plh.pkix.core.utils.store.FileWrapper;
 import org.adorsys.plh.pkix.core.utils.store.FilesContainer;
 import org.adorsys.plh.pkix.core.utils.store.KeyStoreWraper;
@@ -26,12 +27,11 @@ import org.bouncycastle.cert.X509CertificateHolder;
 public class FileContainerImpl implements FilesContainer {
 	public static final String CONTAINER_CONTACTS_DIR_NAME="containerContacts";
 
-	private final ContactManager contactManager;
+	private final ContactManager trustedContactManager;
 	
 	private final PrivateKeyEntry containerPrivateKeyEntry;
-	private final ContactManager containerPrivateKeyContactManager;
+	private final ContactManager privateContactManager;
 	private final File rootDirectory;
-
 
 	private final BuilderChecker checker = new BuilderChecker(FileContainerImpl.class);
 	public FileContainerImpl(KeyStoreWraper containerKeyStoreWraper, File rootDirectory) {
@@ -41,11 +41,21 @@ public class FileContainerImpl implements FilesContainer {
 
 		this.containerPrivateKeyEntry = containerKeyStoreWraper.getMainMessagePrivateKeyEntry();
 		if(containerPrivateKeyEntry==null)throw new IllegalStateException("Container not authenticated.");
-		this.containerPrivateKeyContactManager = new ContactManagerImpl(containerKeyStoreWraper);
+		this.privateContactManager = new ContactManagerImpl(containerKeyStoreWraper);
 		
 		FileWrapper containerContactDir = newRelativeFile(CONTAINER_CONTACTS_DIR_NAME);
-		contactManager = new ContactManagerImpl(containerContactDir);
+		trustedContactManager = new ContactManagerImpl(containerContactDir);
 		
+		if(trustedContactManager.getContactCount()<=0){// new container.
+			// add our ca self signed certificate to the contact manager.
+			PrivateKeyEntry mainCaPrivateKey = containerKeyStoreWraper.getMainCaPrivateKey();
+			X509CertificateHolder mainCaCertHolder = V3CertificateUtils.getX509CertificateHolder(mainCaPrivateKey.getCertificate());
+			try {
+				trustedContactManager.addCertEntry(mainCaCertHolder);
+			} catch (PlhCheckedException e) {// not supposed to happen
+				throw new IllegalStateException(e);
+			}
+		}
 	}
 
 	@Override
@@ -67,7 +77,7 @@ public class FileContainerImpl implements FilesContainer {
 			throw new IllegalStateException(e);
 		}
 		return new CMSStreamedDecryptorVerifier()
-			.withContactManager(containerPrivateKeyContactManager)
+			.withContactManager(privateContactManager)
 			.withInputStream(signedEncryptedInputStream);
 	}
 
@@ -102,13 +112,11 @@ public class FileContainerImpl implements FilesContainer {
 
 	@Override
 	public ContactManager getTrustedContactManager() {
-		return contactManager;
+		return trustedContactManager;
 	}
 
 	@Override
 	public ContactManager getPrivateContactManager() {
-		return containerPrivateKeyContactManager;
+		return privateContactManager;
 	}
-
-
 }

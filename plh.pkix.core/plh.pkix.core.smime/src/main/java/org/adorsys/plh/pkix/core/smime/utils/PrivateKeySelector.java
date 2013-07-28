@@ -30,7 +30,7 @@ public class PrivateKeySelector {
         byte[] subjectKeyIdentifier = keyTransRecipientId.getSubjectKeyIdentifier();
         List<KeyStoreAlias> allKeyStoreAliases = contactManager.keyStoreAliases();
         if(subjectKeyIdentifier!=null){
-   		 	List<KeyStoreAlias> selectedKeyStoreAliases = KeyStoreAlias.selectBySubjectKeyIdentifier(
+   		 	List<KeyStoreAlias> selectedKeyStoreAliases = KeyStoreAlias.selectByPublicKeyIdentifier(
    		 		allKeyStoreAliases, subjectKeyIdentifier, PrivateKeyEntry.class);
         	
         	PrivateKeyEntry pk = contactManager.findEntryByAlias(PrivateKeyEntry.class, selectedKeyStoreAliases);

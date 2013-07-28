@@ -48,6 +48,10 @@ public interface ContactManager {
 
 	public abstract <T extends Entry> List<T> findEntriesByAlias(
 			Class<T> klass, KeyStoreAlias... keyStoreAliases);
+	
+	public abstract <T extends Entry> List<T> findEntriesByEmail(Class<T> klass,
+			String... emails);
+	
 
 	public abstract List<KeyStoreAlias> keyStoreAliases();
 
@@ -61,9 +65,5 @@ public interface ContactManager {
 
 	public abstract X509CRL getCrl();
 	
-//	public abstract PrivateKeyEntry getMainMessagePrivateKeyEntry();
-//
-//	public abstract PrivateKeyEntry getMainCaPrivateKeyEntry();
-//
-//	public abstract boolean login(char[] accountPass);
+	public abstract int getContactCount();
 }

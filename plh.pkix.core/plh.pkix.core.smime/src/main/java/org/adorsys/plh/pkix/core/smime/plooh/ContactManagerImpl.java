@@ -19,16 +19,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.adorsys.plh.pkix.core.utils.KeyIdUtils;
 import org.adorsys.plh.pkix.core.utils.KeyStoreAlias;
+import org.adorsys.plh.pkix.core.utils.KeyStoreAlias.PurposeEnum;
 import org.adorsys.plh.pkix.core.utils.V3CertificateUtils;
-import org.adorsys.plh.pkix.core.utils.X500NameHelper;
 import org.adorsys.plh.pkix.core.utils.contact.ContactListener;
 import org.adorsys.plh.pkix.core.utils.contact.ContactManager;
 import org.adorsys.plh.pkix.core.utils.exception.PlhCheckedException;
 import org.adorsys.plh.pkix.core.utils.store.FileWrapper;
 import org.adorsys.plh.pkix.core.utils.store.KeyStoreWraper;
 import org.adorsys.plh.pkix.core.utils.store.KeyStoreWraperUtils;
-import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x509.AuthorityKeyIdentifier;
 import org.bouncycastle.cert.X509CertificateHolder;
 
 /**
@@ -65,8 +66,9 @@ public class ContactManagerImpl implements ContactManager {
 	@Override
 	public void addCertEntry(X509CertificateHolder certHolder) throws PlhCheckedException{
 		KeyStoreAlias keyStoreAlias = new KeyStoreAlias(certHolder, TrustedCertificateEntry.class);
-
-		KeyStoreWraper keyStoreWraper = contactIndexer.loadKeyStore(keyStoreAlias.getEndEntityIdHex());
+		String keyStoreId = contactIndexer.getContactIndex().findByKeyStoreAlias(keyStoreAlias);
+		if(keyStoreId==null) keyStoreId = keyStoreAlias.getPublicKeyIdHex();
+		KeyStoreWraper keyStoreWraper = contactIndexer.loadKeyStore(keyStoreId);
 		keyStoreWraper.importCertificates(V3CertificateUtils.getX509BCCertificate(certHolder));
 
 		contactIndexer.indexKeyStore(keyStoreWraper, Collections.singletonList(keyStoreAlias));
@@ -84,7 +86,9 @@ public class ContactManagerImpl implements ContactManager {
 		X509CertificateHolder certHolder = V3CertificateUtils.getX509CertificateHolder(chain[0]);
 		KeyStoreAlias keyStoreAlias = new KeyStoreAlias(certHolder, PrivateKeyEntry.class);
 
-		KeyStoreWraper keyStoreWraper = contactIndexer.loadKeyStore(keyStoreAlias.getEndEntityIdHex());
+		String keyStoreId = contactIndexer.getContactIndex().findByKeyStoreAlias(keyStoreAlias);
+		if(keyStoreId==null) keyStoreId = keyStoreAlias.getPublicKeyIdHex();
+		KeyStoreWraper keyStoreWraper = contactIndexer.loadKeyStore(keyStoreId);
 		keyStoreWraper.importCertificates(V3CertificateUtils.getX509BCCertificate(certHolder));
 		keyStoreWraper.setPrivateKeyEntry(key, chain);
 
@@ -99,7 +103,9 @@ public class ContactManagerImpl implements ContactManager {
 		X509CertificateHolder certHolder = new X509CertificateHolder(certArray[0]);
 		KeyStoreAlias keyStoreAlias = new KeyStoreAlias(certHolder, PrivateKeyEntry.class);
 
-		KeyStoreWraper keyStoreWraper = contactIndexer.loadKeyStore(keyStoreAlias.getEndEntityIdHex());
+		String keyStoreId = contactIndexer.getContactIndex().findByKeyStoreAlias(keyStoreAlias);
+		if(keyStoreId==null) keyStoreId = keyStoreAlias.getPublicKeyIdHex();
+		KeyStoreWraper keyStoreWraper = contactIndexer.loadKeyStore(keyStoreId);
 		keyStoreWraper.importIssuedCertificate(certArray);
 
 		contactIndexer.indexKeyStore(keyStoreWraper, Collections.singletonList(keyStoreAlias));
@@ -185,6 +191,24 @@ public class ContactManagerImpl implements ContactManager {
 		}
 		return result;
 	}
+	
+	@Override
+	public <T extends Entry> List<T> findEntriesByEmail(Class<T> klass,
+			String... emails) {
+		Set<String> storeAliases = contactIndexer.findKeyStoreAliasesByEmail(emails);
+		List<T> result = new ArrayList<T>();
+		for (String alias : storeAliases) {
+			KeyStoreAlias keyStoreAlias = new KeyStoreAlias(alias);
+			if(!keyStoreAlias.isEntryType(klass)) continue;
+			String keyStoreId = contactIndexer.getContactIndex().findByKeyStoreAlias(keyStoreAlias);
+			if(keyStoreId==null) continue;
+			KeyStoreWraper keyStore = contactIndexer.loadKeyStore(keyStoreId);
+			if(keyStore==null)continue;
+			T entry = keyStore.findEntryByAlias(klass, keyStoreAlias);
+			result.add(entry);
+		}
+		return result;
+	}
 
 	/* (non-Javadoc)
 	 * @see org.adorsys.plh.pkix.core.smime.contact.ContactManager#findEntriesByAlias(java.lang.Class, org.adorsys.plh.pkix.core.utils.KeyStoreAlias)
@@ -238,28 +262,7 @@ public class ContactManagerImpl implements ContactManager {
 			KeyStoreWraper keyStore = contactIndexer.loadKeyStore(keyStoreId);
 			if(keyStore==null) continue;
 			TrustedCertificateEntry trustedCertificateEntry = keyStore.findEntryByAlias(TrustedCertificateEntry.class, keyStoreAlias);
-			// find the corresponding certificate signed by one of my private keys 
-			// in that store
-			for (Map.Entry<KeyStoreAlias, PrivateKeyEntry> entry : privateKeyEntrySet) {
-				KeyStoreAlias privateKeyAlias = entry.getKey();
-				KeyStoreAlias signedByme = new KeyStoreAlias(
-						null,
-						keyStoreAlias.getPublicKeyIdHex(), 
-						keyStoreAlias.getSubjectKeyIdHex(), 
-						privateKeyAlias.getSubjectKeyIdHex(), 
-						null,
-						null,
-						TrustedCertificateEntry.class);
-				TrustedCertificateEntry certSignedByme = keyStore.findEntryByAlias(TrustedCertificateEntry.class, signedByme);
-				if(certSignedByme!=null){
-					try {
-						certSignedByme.getTrustedCertificate().verify(entry.getValue().getCertificate().getPublicKey());
-						trustedCertificateEntries.add(trustedCertificateEntry);					
-					} catch (Exception e) {
-						// ignore certificate
-					}
-				}
-			}
+			trustedCertificateEntries.add(trustedCertificateEntry);					
 		}
 		
 		Set<TrustAnchor> trustAnchors = new HashSet<TrustAnchor>();
@@ -289,8 +292,12 @@ public class ContactManagerImpl implements ContactManager {
 		List<X509CertificateHolder> researchList = KeyStoreWraperUtils.dropCertWithIncludedCa(certificates);
 		List<X509CertificateHolder> signerCerts = new ArrayList<X509CertificateHolder>();
 		signed: for (X509CertificateHolder signedCertificate : researchList) {
-			X500Name subject = signedCertificate.getSubject();
-			List<PrivateKeyEntry> privateCaEntries = findCaEntriesBySubject(PrivateKeyEntry.class, subject);
+			AuthorityKeyIdentifier authorityKeyIdentifier = KeyIdUtils.readAuthorityKeyIdentifier(signedCertificate);
+			if(authorityKeyIdentifier==null) continue;
+			String authorityKeyIdentifierHex = KeyIdUtils.authorityKeyIdentifierToString(authorityKeyIdentifier);
+			String authoritySerialNumberHex = KeyIdUtils.authoritySerialNumberToString(authorityKeyIdentifier);
+			KeyStoreAlias keyStoreAlias = new KeyStoreAlias(authorityKeyIdentifierHex, null, authoritySerialNumberHex, PurposeEnum.CA, PrivateKeyEntry.class);
+			List<PrivateKeyEntry> privateCaEntries = findEntriesByAlias(PrivateKeyEntry.class, keyStoreAlias);
 			for (PrivateKeyEntry privateKeyEntry : privateCaEntries) {
 				X509CertificateHolder signerCertificate = V3CertificateUtils.getX509CertificateHolder(privateKeyEntry.getCertificate());
 				if (V3CertificateUtils.isSigingCertificate(signedCertificate, signerCertificate)){
@@ -298,7 +305,8 @@ public class ContactManagerImpl implements ContactManager {
 					break signed;
 				}
 			}
-			List<TrustedCertificateEntry> trusted = findCaEntriesBySubject(TrustedCertificateEntry.class, subject);
+			keyStoreAlias = new KeyStoreAlias(authorityKeyIdentifierHex, null, authoritySerialNumberHex, PurposeEnum.CA, TrustedCertificateEntry.class);
+			List<TrustedCertificateEntry> trusted = findEntriesByAlias(TrustedCertificateEntry.class, keyStoreAlias);
 			for (TrustedCertificateEntry trustedCertificateEntry : trusted) {
 				X509CertificateHolder signerCertificate = V3CertificateUtils.getX509CertificateHolder(trustedCertificateEntry.getTrustedCertificate());
 				if (V3CertificateUtils.isSigingCertificate(signedCertificate, signerCertificate)){
@@ -316,18 +324,6 @@ public class ContactManagerImpl implements ContactManager {
 		return hashSet;
 	}
 
-	private <T extends Entry> List<T> findCaEntriesBySubject(Class<T> klass,
-			X500Name... subjects) {
-		List<KeyStoreAlias> keyStoreAliases = new ArrayList<KeyStoreAlias>();
-		for (X500Name subject : subjects) {
-			String endEntityIdHex = X500NameHelper
-					.readUniqueIdentifier(subject);
-			keyStoreAliases.add(new KeyStoreAlias(endEntityIdHex, null, null,
-					null, null, KeyStoreAlias.PurposeEnum.CA, klass));
-		}
-		return findEntriesByAlias(klass, keyStoreAliases);
-	}
-
 	@Override
 	public X509CRL getCrl() {
 		return null;
@@ -342,5 +338,10 @@ public class ContactManagerImpl implements ContactManager {
 	@Override
 	public void removeContactListener(ContactListener listener) {
 		contactListeners.remove(listener);
+	}
+
+	@Override
+	public int getContactCount() {
+		return contactIndexer.contactCount();
 	}
 }
