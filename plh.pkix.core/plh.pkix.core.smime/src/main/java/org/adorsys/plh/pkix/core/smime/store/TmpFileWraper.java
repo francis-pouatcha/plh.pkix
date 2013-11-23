@@ -15,13 +15,18 @@ import org.adorsys.plh.pkix.core.smime.engines.CMSPWDStreamDecryptor;
 import org.adorsys.plh.pkix.core.smime.engines.CMSPWDStreamEncryptor;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 
 public class TmpFileWraper {
 
 	private final File tmpFile;
 	private final char[] password;
+
+	private List<InputStream> inputStreams = new ArrayList<InputStream>();
+	private List<OutputStream> outputStreams = new ArrayList<OutputStream>();
+	
 	public TmpFileWraper() {
-		password = UUID.randomUUID().toString().toCharArray();
+		password = RandomStringUtils.randomAlphanumeric(15).toCharArray();
 		try {
 			tmpFile = File.createTempFile(UUID.randomUUID().toString(), ".tmp");
 		} catch (IOException e) {
@@ -69,8 +74,6 @@ public class TmpFileWraper {
 		}
 	}
 
-	private List<InputStream> inputStreams = new ArrayList<InputStream>();
-	private List<OutputStream> outputStreams = new ArrayList<OutputStream>();
 	public void dispose() {
 		for (InputStream inputStream : inputStreams) {
 			IOUtils.closeQuietly(inputStream);

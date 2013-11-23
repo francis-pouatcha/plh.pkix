@@ -28,8 +28,8 @@ import org.junit.Test;
 
 public class SingEncryptScenarioTests {
 
-	static final String srcFile1 = "src/test/resources/rfc4210.pdf";
-	static final String srcFile2 = "src/test/resources/rfc5652CMS.pdf";
+//	static final String srcFile1 = "src/test/resources/rfc4210.pdf";
+//	static final String srcFile2 = "src/test/resources/rfc5652CMS.pdf";
 
 	
 	InMemoryCMPMessenger cmpMessenger = null;

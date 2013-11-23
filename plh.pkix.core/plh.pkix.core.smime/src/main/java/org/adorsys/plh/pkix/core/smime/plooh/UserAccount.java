@@ -30,7 +30,6 @@ public final class UserAccount {
 	private final ActionContext accountContext;
 	
 	private final FileWrapper accountDirWrapper;
-
 	
 	public UserAccount(ActionContext accountContext, File accountDir, 
 			FileWrapper accountDirWrapper, KeyStorePasswordsCallbackHandler callbackHandler) {
@@ -42,7 +41,8 @@ public final class UserAccount {
 	
 	public UserAccount(ActionContext accountContext, File accountDir, 
 			FileWrapper accountDirWrapper, 
-			KeyStorePasswordsCallbackHandler callbackHandler,  X509CertificateHolder containingDeviceCertificate) {
+			KeyStorePasswordsCallbackHandler callbackHandler,  
+			X509CertificateHolder containingDeviceCertificate) {
 		X500Name deviceSubjectDN = X500NameHelper.readSubjectDN(containingDeviceCertificate);
 		String deviceCN = X500NameHelper.getAttributeString(deviceSubjectDN, BCStrictStyle.CN);
 		userAccountContainer = FileContainerFactory.createFilesContainer(
@@ -124,4 +124,5 @@ public final class UserAccount {
 	public List<PrivateKeyEntry> findPrivateKeys(KeyStoreAlias keyStoreAlias){
 		return userAccountContainer.getPrivateContactManager().findEntriesByAlias(PrivateKeyEntry.class, keyStoreAlias);
 	}
+
 }

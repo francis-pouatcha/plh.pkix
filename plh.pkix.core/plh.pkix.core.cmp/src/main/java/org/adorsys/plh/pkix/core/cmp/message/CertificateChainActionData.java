@@ -6,6 +6,7 @@ import java.io.OutputStream;
 import org.adorsys.plh.pkix.core.utils.action.ASN1StreamUtils;
 import org.adorsys.plh.pkix.core.utils.action.ActionData;
 import org.adorsys.plh.pkix.core.utils.asn1.ASN1CertificateChain;
+import org.adorsys.plh.pkix.core.utils.cmd.ASN1Command;
 
 /**
  * We can use a key store to store a list of certificates.
@@ -36,6 +37,7 @@ public class CertificateChainActionData implements ActionData {
 
 	@Override
 	public void readFrom(InputStream inputStream) {
-		ASN1StreamUtils.readFrom(inputStream);
+		byte[] bs = ASN1StreamUtils.readFrom(inputStream);
+		certificateChain = ASN1CertificateChain.getInstance(bs);
 	}
 }

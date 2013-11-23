@@ -4,6 +4,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 
+import javax.activation.FileTypeMap;
+
 /**
  * In order to protect user data on the file system, module reading and writing file
  * can implement the file container interface.
@@ -83,4 +85,15 @@ public interface FileWrapper {
 	 * @return
 	 */
 	public KeyStoreWraper getKeyStoreWraper();
+	
+    /**
+     * Must return the content type associated with the underlying file.
+     */
+	public String getContentType();	
+	
+	/**
+	 * Set the file type map assocaited with this file wrapper.
+	 * @param typeMap
+	 */
+	public FileWrapper setFileTypeMap(FileTypeMap typeMap);
 }

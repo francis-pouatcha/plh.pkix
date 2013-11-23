@@ -26,6 +26,7 @@ public class CertTemplateActionData implements ActionData  {
 
 	@Override
 	public void readFrom(InputStream inputStream) {
-		ASN1StreamUtils.readFrom(inputStream);
+		byte[] bs = ASN1StreamUtils.readFrom(inputStream);
+		certTemplate = CertTemplate.getInstance(bs);
 	}
 }

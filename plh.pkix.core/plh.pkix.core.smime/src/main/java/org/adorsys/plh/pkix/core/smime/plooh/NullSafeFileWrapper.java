@@ -4,6 +4,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 
+import javax.activation.FileTypeMap;
+
 import org.adorsys.plh.pkix.core.utils.store.FileWrapper;
 import org.adorsys.plh.pkix.core.utils.store.KeyStoreWraper;
 
@@ -85,6 +87,18 @@ public class NullSafeFileWrapper implements FileWrapper {
 	public URI getURI() {
 		if(delegate==null) return null;
 		return delegate.getURI();
+	}
+
+	@Override
+	public String getContentType() {
+		if(delegate!=null) delegate.getContentType();
+		return null;
+	}
+
+	@Override
+	public FileWrapper setFileTypeMap(FileTypeMap typeMap) {
+		if(delegate!=null) delegate.setFileTypeMap(typeMap);
+		return this;
 	}
 
 }

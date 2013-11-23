@@ -63,7 +63,7 @@ public class ContactIndex {
 		keyAlias2KeyStoreId.put(keyStoreAlias, keyStoreId);
 		publicKeyId2KeyStoreId.put(publicKeyIdHex, keyStoreId);
 	}
-
+	
 	public Set<KeyStoreAlias> keyStoreAliases(){
 		return keyAlias2KeyStoreId.keySet();
 	}

@@ -8,6 +8,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 
+import javax.activation.FileTypeMap;
+
 /**
  * @author francis
  *
@@ -17,7 +19,9 @@ public class UnprotectedFileWraper implements FileWrapper{
 	private String path;
 	private File file;
 	private File rootFile;
-	
+
+    private FileTypeMap typeMap = null;
+
 //	private UnprotectedFileContainer container;
 	
 	public UnprotectedFileWraper(String path, File rootFile) {
@@ -116,4 +120,33 @@ public class UnprotectedFileWraper implements FileWrapper{
 	public URI getURI() {
 		return file.toURI();
 	}
+	
+
+    /**
+     * This method returns the MIME type of the data in the form of a
+     * string. This method uses the currently installed FileTypeMap. If
+     * there is no FileTypeMap explicitly set, the FileWraperImpl will
+     * call the <code>getDefaultFileTypeMap</code> method on
+     * FileTypeMap to acquire a default FileTypeMap. <i>Note: By
+     * default, the FileTypeMap used will be a MimetypesFileTypeMap.</i>
+     *
+     * @return the MIME Type
+     * @see javax.activation.FileTypeMap#getDefaultFileTypeMap
+     */
+	@Override
+    public String getContentType() {
+		if(file==null) throw new IllegalStateException("File is not set");
+		if(file.isDirectory()) throw new IllegalStateException("File is a directory");
+		if (typeMap == null)
+		    return FileTypeMap.getDefaultFileTypeMap().getContentType(file);
+		else
+		    return typeMap.getContentType(file);
+    }
+
+	@Override
+	public FileWrapper setFileTypeMap(FileTypeMap typeMap) {
+		this.typeMap = typeMap;
+		return this;
+	}
+	
 }
