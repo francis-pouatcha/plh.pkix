@@ -16,7 +16,7 @@ import org.bouncycastle.asn1.DERTaggedObject;
 
 public class EmailSynchData extends ASN1Object {
 
-	/**
+	/*
 	 * This can be used to localize the email account associated with this state object in case
 	 * files are tempered on the file system.
 	 * 
@@ -28,6 +28,7 @@ public class EmailSynchData extends ASN1Object {
 	private DERGeneralizedTime lastSynchDate;
 	private ASN1Integer lastProcessedUid;
 	private ASN1Integer lastUidValidity;
+	private DERGeneralizedTime lastProcessedDate;
 	
     private EmailSynchData(ASN1Sequence seq)
     {
@@ -53,6 +54,9 @@ public class EmailSynchData extends ASN1Object {
             case 3:
             	lastUidValidity = ASN1Integer.getInstance(tObj, true);
                 break;
+            case 4:
+            	lastProcessedDate = DERGeneralizedTime.getInstance(tObj, true);
+                break;
             default:
                 throw new IllegalArgumentException("unknown tag number: " + tObj.getTagNo());
             }
@@ -76,6 +80,7 @@ public class EmailSynchData extends ASN1Object {
 
     public EmailSynchData(DERIA5String accountId)
     {
+		assert accountId!=null : "accountId can not be null";
     	this.accountId = accountId;
     }
 
@@ -84,9 +89,10 @@ public class EmailSynchData extends ASN1Object {
      * ASN1Action ::= SEQUENCE {
      * 					accountId		DERIA5String,
      *                  lasSyncState  		[0] DERIA5String OPTIONAL,
-     *                  lastSynchDate  		[1] DERGeneralizedTime OPTIONAL
-     *                  lastProcessedUid  	[2] ASN1Integer OPTIONAL
-     *                  lastUidValidity  	[3] ASN1Integer OPTIONAL
+     *                  lastSynchDate  		[1] DERGeneralizedTime OPTIONAL,
+     *                  lastProcessedUid  	[2] ASN1Integer OPTIONAL,
+     *                  lastUidValidity  	[3] ASN1Integer OPTIONAL,
+     *                  lastProcessedDate  	[4] DERGeneralizedTime OPTIONAL
      * }
      * </pre>
      * @return a basic ASN.1 object representation.
@@ -101,6 +107,7 @@ public class EmailSynchData extends ASN1Object {
         addOptional(v, 1, lastSynchDate);
         addOptional(v, 2, lastProcessedUid);
         addOptional(v, 3, lastUidValidity);
+        addOptional(v, 4, lastProcessedDate);
 
         return new DERSequence(v);
 	}
@@ -148,4 +155,13 @@ public class EmailSynchData extends ASN1Object {
 	public void setLastUidValidity(ASN1Integer lastUidValidity) {
 		this.lastUidValidity = lastUidValidity;
 	}
+
+	public DERGeneralizedTime getLastProcessedDate() {
+		return lastProcessedDate;
+	}
+
+	public void setLastProcessedDate(DERGeneralizedTime lastProcessedDate) {
+		this.lastProcessedDate = lastProcessedDate;
+	}
+
 }

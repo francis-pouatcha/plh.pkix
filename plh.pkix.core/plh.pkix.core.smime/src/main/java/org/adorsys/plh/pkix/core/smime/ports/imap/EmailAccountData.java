@@ -3,17 +3,18 @@ package org.adorsys.plh.pkix.core.smime.ports.imap;
 import java.util.Enumeration;
 import java.util.UUID;
 
-import javax.mail.internet.ParseException;
-
 import org.bouncycastle.asn1.ASN1Boolean;
+import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.ASN1Object;
 import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.ASN1Sequence;
+import org.bouncycastle.asn1.ASN1TaggedObject;
 import org.bouncycastle.asn1.DERBoolean;
 import org.bouncycastle.asn1.DERIA5String;
 import org.bouncycastle.asn1.DERSequence;
+import org.bouncycastle.asn1.DERTaggedObject;
 import org.bouncycastle.asn1.x509.Certificate;
 
 /**
@@ -29,8 +30,9 @@ public class EmailAccountData extends ASN1Object {
 	 * This can be used to localize any dependent associated with this object in case file names are modified
 	 * on the file system.
 	 */
-	private DERIA5String accountId = new DERIA5String(UUID.randomUUID().toString());
+	private final DERIA5String accountId;
 
+	//============================START OPTIONAL FIELDS ================================//
 	/**
 	 * The login name of the email account.
 	 */
@@ -65,7 +67,7 @@ public class EmailAccountData extends ASN1Object {
 	
 	private DERIA5String smtpHost;
 
-	private DERIA5String smtpPort = new DERIA5String("-1");
+	private ASN1Integer smtpPort = new ASN1Integer(-1);
 
 	private DERIA5String smtpProtocol = new DERIA5String("smtp");
 
@@ -95,27 +97,16 @@ public class EmailAccountData extends ASN1Object {
 
 	private DERIA5String localDir = new DERIA5String(UUID.randomUUID().toString());
 	
-	/**
-	 * File in which the state of the mail account is stored. For example:
-	 * - Last synchronization date
-	 * - Last last Processed MessageIds
-	 * private DERGeneralizedTime lastImport;
-	 * private DERIA5String lastImportComment;
-	 */
-	private DERIA5String stateFile = new DERIA5String(UUID.randomUUID().toString());
-	
 	private ASN1Boolean advanced = DERBoolean.getInstance(false);
 
 	// =========================== END REQUIRED FIELDS ===============================//
 
-	public EmailAccountData(DERIA5String email, DERIA5String password) {
+	public EmailAccountData(DERIA5String accountId, DERIA5String email, DERIA5String password) {
+		assert accountId!=null : "accountId can not be null";
+		this.accountId = accountId;
+		this.username = email;
 		this.defaultEmail = email;
 		this.password = password;
-		try {
-			MailServers.preprocessMailAccount(this);
-		} catch (ParseException e) {
-			throw new IllegalStateException(e);
-		}
 	}
 	
     private EmailAccountData(ASN1Sequence seq) {
@@ -123,25 +114,65 @@ public class EmailAccountData extends ASN1Object {
 		Enumeration en = seq.getObjects();
 
         accountId = DERIA5String.getInstance(en.nextElement());
-        username = DERIA5String.getInstance(en.nextElement());
-        password = DERIA5String.getInstance(en.nextElement());
-        host = DERIA5String.getInstance(en.nextElement());
-        port = ASN1Integer.getInstance(en.nextElement());
-        protocol = DERIA5String.getInstance(en.nextElement());
-        defaultEmail = DERIA5String.getInstance(en.nextElement());
-        smtpHost = DERIA5String.getInstance(en.nextElement());
-        smtpPort = DERIA5String.getInstance(en.nextElement());
-        smtpProtocol = DERIA5String.getInstance(en.nextElement());
-        serverCert = Certificate.getInstance(en.nextElement());
-        inboxFolder = DERIA5String.getInstance(en.nextElement());
-        ploohInFolder = DERIA5String.getInstance(en.nextElement());
-        ploohOutFolder = DERIA5String.getInstance(en.nextElement());
-        ploohArchiveFolder = DERIA5String.getInstance(en.nextElement());
-
-        localDir = DERIA5String.getInstance(en.nextElement());
-        stateFile = DERIA5String.getInstance(en.nextElement());
-        advanced = ASN1Boolean.getInstance(en.nextElement());
         
+        while (en.hasMoreElements())
+        {
+            ASN1TaggedObject tObj = (ASN1TaggedObject)en.nextElement();
+
+            switch (tObj.getTagNo())
+            {
+            case 0:
+                username = DERIA5String.getInstance(tObj, true);
+                break;
+            case 1:
+                password = DERIA5String.getInstance(tObj, true);
+                break;
+            case 2:
+            	host = DERIA5String.getInstance(tObj, true);
+                break;
+            case 3:
+                port = ASN1Integer.getInstance(tObj, true);
+                break;
+            case 4:
+                protocol = DERIA5String.getInstance(tObj, true);
+                break;
+            case 5:
+                defaultEmail = DERIA5String.getInstance(tObj, true);
+                break;
+            case 6:
+                smtpHost = DERIA5String.getInstance(tObj, true);
+                break;
+            case 7:
+                smtpPort = ASN1Integer.getInstance(tObj, true);
+                break;
+            case 8:
+                smtpProtocol = DERIA5String.getInstance(tObj, true);
+                break;
+            case 9:
+                serverCert = Certificate.getInstance(tObj, true);
+                break;
+            case 10:
+                inboxFolder = DERIA5String.getInstance(tObj, true);
+                break;
+            case 11:
+                ploohInFolder = DERIA5String.getInstance(tObj, true);
+                break;
+            case 12:
+                ploohOutFolder = DERIA5String.getInstance(tObj, true);
+                break;
+            case 13:
+                ploohArchiveFolder = DERIA5String.getInstance(tObj, true);
+                break;
+            case 14:
+                localDir = DERIA5String.getInstance(tObj, true);
+                break;
+            case 15:
+                advanced = ASN1Boolean.getInstance(tObj, true);
+                break;
+            default:
+                throw new IllegalArgumentException("unknown tag number: " + tObj.getTagNo());
+            }
+        }
     }
 
     public static EmailAccountData getInstance(Object o)
@@ -162,24 +193,23 @@ public class EmailAccountData extends ASN1Object {
 	/**
      * <pre>
      * ASN1Action ::= SEQUENCE {
-     * 					accountId				DERIA5String,
-     * 					username				DERIA5String,
-     * 					password				DERIA5String,
-     * 					host					DERIA5String,
-     * 					port					ASN1Integer,
-     * 					protocol				DERIA5String,
-     * 					defaultEmail			DERIA5String,
-     * 					smtpHost				DERIA5String,
-     * 					smtpPort				DERIA5String,
-     * 					smtpProtocol			DERIA5String,
-     * 					serverCert				DERIA5String,
-     * 					inboxFolder				DERIA5String,
-     * 					ploohInFolder			DERIA5String,
-     * 					ploohOutFolder			DERIA5String,
-     * 					ploohArchiveFolder		DERIA5String,
-     * 					localDir				DERIA5String,
-     * 					stateFile				DERIA5String,
-     * 					advanced				ASN1Boolean
+     * 					accountId					DERIA5String,
+     * 					username				[0] DERIA5String OPTIONAL,
+     * 					password				[1] DERIA5String OPTIONAL,
+     * 					host					[2] DERIA5String OPTIONAL,
+     * 					port					[3] ASN1Integer OPTIONAL,
+     * 					protocol				[4] DERIA5String OPTIONAL,
+     * 					defaultEmail			[5] DERIA5String OPTIONAL,
+     * 					smtpHost				[6] DERIA5String OPTIONAL,
+     * 					smtpPort				[7] ASN1Integer OPTIONAL,
+     * 					smtpProtocol			[8] DERIA5String OPTIONAL,
+     * 					serverCert				[9] DERIA5String OPTIONAL,
+     * 					inboxFolder				[10] DERIA5String OPTIONAL,
+     * 					ploohInFolder			[11] DERIA5String OPTIONAL,
+     * 					ploohOutFolder			[12] DERIA5String OPTIONAL,
+     * 					ploohArchiveFolder		[13] DERIA5String OPTIONAL,
+     * 					localDir				[14] DERIA5String OPTIONAL,
+     * 					advanced				[15] ASN1Boolean OPTIONAL
      * }
      * </pre>
      * @return a basic ASN.1 object representation.
@@ -189,26 +219,32 @@ public class EmailAccountData extends ASN1Object {
         ASN1EncodableVector v = new ASN1EncodableVector();
         
         v.add(accountId);
-        v.add(username);
-        v.add(password);
-        v.add(host);
-        v.add(port);
-        v.add(protocol);
-        v.add(defaultEmail);
-        v.add(smtpHost);
-        v.add(smtpPort);
-        v.add(smtpProtocol);
-        v.add(serverCert);
-        v.add(inboxFolder);
-        v.add(ploohInFolder);
-        v.add(ploohOutFolder);
-        v.add(ploohArchiveFolder);
-        v.add(localDir);
-        v.add(stateFile);
-        v.add(advanced);
+        addOptional(v,0,username);
+        addOptional(v,1,password);
+        addOptional(v,2,host);
+        addOptional(v,3,port);
+        addOptional(v,4,protocol);
+        addOptional(v,5,defaultEmail);
+        addOptional(v,6,smtpHost);
+        addOptional(v,7,smtpPort);
+        addOptional(v,8,smtpProtocol);
+        addOptional(v,9,serverCert);
+        addOptional(v,10,inboxFolder);
+        addOptional(v,11,ploohInFolder);
+        addOptional(v,12,ploohOutFolder);
+        addOptional(v,13,ploohArchiveFolder);
+        addOptional(v,14,localDir);
+        addOptional(v,15,advanced);
 
         return new DERSequence(v);
 	}
+    private void addOptional(ASN1EncodableVector v, int tagNo, ASN1Encodable obj)
+    {
+        if (obj != null)
+        {
+            v.add(new DERTaggedObject(true, tagNo, obj));
+        }
+    }
 
 	public DERIA5String getUsername() {
 		return username;
@@ -266,11 +302,11 @@ public class EmailAccountData extends ASN1Object {
 		this.smtpHost = smtpHost;
 	}
 
-	public DERIA5String getSmtpPort() {
+	public ASN1Integer getSmtpPort() {
 		return smtpPort;
 	}
 
-	public void setSmtpPort(DERIA5String smtpPort) {
+	public void setSmtpPort(ASN1Integer smtpPort) {
 		this.smtpPort = smtpPort;
 	}
 
@@ -330,14 +366,6 @@ public class EmailAccountData extends ASN1Object {
 		this.localDir = localDir;
 	}
 
-	public DERIA5String getStateFile() {
-		return stateFile;
-	}
-
-	public void setStateFile(DERIA5String stateFile) {
-		this.stateFile = stateFile;
-	}
-
 	public DERIA5String getAccountId() {
 		return accountId;
 	}
@@ -371,8 +399,8 @@ public class EmailAccountData extends ASN1Object {
 		return smtpHost==null?null:smtpHost.getString();
 	}
 
-	public String getSmtpPortAsString() {
-		return smtpPort==null?null:smtpPort.getString();
+	public Long getSmtpPortAsLong() {
+		return smtpPort==null?null:smtpPort.getValue().longValue();
 	}
 
 	public String getSmtpProtocolAsString() {
@@ -399,12 +427,8 @@ public class EmailAccountData extends ASN1Object {
 		return localDir==null?null:localDir.getString();
 	}
 
-	public String getStateFileString() {
-		return stateFile==null?null:stateFile.getString();
-	}
-
 	public String getAccountIdString() {
-		return accountId==null?null:accountId.getString();
+		return accountId.getString();
 	}
 	
 	// ==================================================
@@ -436,8 +460,8 @@ public class EmailAccountData extends ASN1Object {
 		this.smtpHost = smtpHost==null?null:new DERIA5String(smtpHost);
 	}
 
-	public void setSmtpPort(String smtpPort) {
-		this.smtpPort = smtpPort==null?null:new DERIA5String(smtpPort);
+	public void setSmtpPort(Long smtpPort) {
+		this.smtpPort = smtpPort==null?null:new ASN1Integer(smtpPort);
 	}
 
 	public void setSmtpProtocol(String smtpProtocol) {
@@ -462,10 +486,6 @@ public class EmailAccountData extends ASN1Object {
 
 	public void setLocalDir(String localDir) {
 		this.localDir = localDir==null?null:new DERIA5String(localDir);
-	}
-
-	public void setStateFile(String stateFile) {
-		this.stateFile = stateFile==null?null:new DERIA5String(stateFile);
 	}
 
 	public ASN1Boolean getAdvanced() {

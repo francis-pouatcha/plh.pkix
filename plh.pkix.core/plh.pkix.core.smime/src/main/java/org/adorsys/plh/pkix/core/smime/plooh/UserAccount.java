@@ -3,18 +3,22 @@ package org.adorsys.plh.pkix.core.smime.plooh;
 import java.io.File;
 import java.security.KeyStore.PrivateKeyEntry;
 import java.security.KeyStore.TrustedCertificateEntry;
+import java.security.cert.Certificate;
+import java.util.Date;
 import java.util.List;
 
+import javax.security.auth.callback.CallbackHandler;
+
+import org.adorsys.plh.pkix.core.smime.ports.CommunicationPort;
+import org.adorsys.plh.pkix.core.smime.ports.StoragePort;
 import org.adorsys.plh.pkix.core.utils.KeyStoreAlias;
 import org.adorsys.plh.pkix.core.utils.KeyStoreAlias.PurposeEnum;
-import org.adorsys.plh.pkix.core.utils.X500NameHelper;
+import org.adorsys.plh.pkix.core.utils.V3CertificateUtils;
 import org.adorsys.plh.pkix.core.utils.action.ActionContext;
 import org.adorsys.plh.pkix.core.utils.contact.ContactListener;
 import org.adorsys.plh.pkix.core.utils.contact.ContactManager;
 import org.adorsys.plh.pkix.core.utils.store.FileWrapper;
 import org.adorsys.plh.pkix.core.utils.store.FilesContainer;
-import org.bouncycastle.asn1.x500.X500Name;
-import org.bouncycastle.asn1.x500.style.BCStrictStyle;
 import org.bouncycastle.cert.X509CertificateHolder;
 
 /**
@@ -31,8 +35,13 @@ public final class UserAccount {
 	
 	private final FileWrapper accountDirWrapper;
 	
+	private CommunicationPort systemComPort;
+	private CommunicationPort dataComPort;
+	
+	private StoragePort dataStoragePort;
+	
 	public UserAccount(ActionContext accountContext, File accountDir, 
-			FileWrapper accountDirWrapper, KeyStorePasswordsCallbackHandler callbackHandler) {
+			FileWrapper accountDirWrapper, CallbackHandler callbackHandler) {
 		userAccountContainer = FileContainerFactory.loadFilesContainer(accountDir, accountDirWrapper, callbackHandler);
 		this.accountContext = accountContext;
 		this.accountDirWrapper = accountDirWrapper;
@@ -41,12 +50,12 @@ public final class UserAccount {
 	
 	public UserAccount(ActionContext accountContext, File accountDir, 
 			FileWrapper accountDirWrapper, 
-			KeyStorePasswordsCallbackHandler callbackHandler,  
+			CallbackHandler callbackHandler,  
 			X509CertificateHolder containingDeviceCertificate) {
-		X500Name deviceSubjectDN = X500NameHelper.readSubjectDN(containingDeviceCertificate);
-		String deviceCN = X500NameHelper.getAttributeString(deviceSubjectDN, BCStrictStyle.CN);
+//		X500Name deviceSubjectDN = X500NameHelper.readSubjectDN(containingDeviceCertificate);
+//		String deviceCN = X500NameHelper.getAttributeString(deviceSubjectDN, BCStrictStyle.CN);
 		userAccountContainer = FileContainerFactory.createFilesContainer(
-				deviceCN, ContainerType.A,
+				ContainerType.A,
 				accountDir, accountDirWrapper, callbackHandler);
 		this.accountContext = accountContext;
 		this.accountDirWrapper = accountDirWrapper;
@@ -125,4 +134,47 @@ public final class UserAccount {
 		return userAccountContainer.getPrivateContactManager().findEntriesByAlias(PrivateKeyEntry.class, keyStoreAlias);
 	}
 
+	public CommunicationPort getSystemComPort() {
+		return systemComPort;
+	}
+
+	public void setSystemComPort(CommunicationPort systemComPort) {
+		this.systemComPort = systemComPort;
+	}
+
+	public CommunicationPort getDataComPort() {
+		return dataComPort;
+	}
+
+	public void setDataComPort(CommunicationPort dataComPort) {
+		this.dataComPort = dataComPort;
+	}
+
+	public StoragePort getDataStoragePort() {
+		return dataStoragePort;
+	}
+
+	public void setDataStoragePort(StoragePort dataStoragePort) {
+		this.dataStoragePort = dataStoragePort;
+	}
+	
+	/**
+	 * Returns the 
+	 * @return
+	 */
+	public Date getCreationDate(){
+		List<PrivateKeyEntry> findAllCaPrivateKeyEntries = findAllCaPrivateKeyEntries();
+		Date result = null;
+		for (PrivateKeyEntry privateKeyEntry : findAllCaPrivateKeyEntries) {
+			Certificate certificate = privateKeyEntry.getCertificate();
+			X509CertificateHolder certificateHolder = V3CertificateUtils.getX509CertificateHolder(certificate);
+			Date before = certificateHolder.getNotBefore();
+			if(result==null) {
+				result = before;
+			} else if(before!=null){
+				result = result.before(before)?result:before;
+			}
+		}
+		return result;
+	}
 }

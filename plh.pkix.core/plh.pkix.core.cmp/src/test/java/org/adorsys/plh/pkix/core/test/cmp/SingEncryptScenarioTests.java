@@ -66,7 +66,8 @@ public class SingEncryptScenarioTests {
 		List<String> registeringClients = new ArrayList<String>(); 
 		
 		CMPClient certAuthClient = new CMPClient(cmpMessenger, workspaceDir, 
-				"certAuth", "certAuthContainerKeyPass".toCharArray(), "certAuthContainerStorePass".toCharArray());
+				"certAuth", "certAuthContainerKeyPass".toCharArray(), "certAuthContainerStorePass".toCharArray(),
+				"certAuth@mail.com", "certAuthUserKeyPass".toCharArray(), "certAuthUserStorePass".toCharArray());
 		CMPAccount certAuthAccount = certAuthClient.getCmpAccount();
 		BlockingContactListener certAuthBlockingContactListener = new BlockingContactListener();
 		certAuthAccount.getUserAccount().addContactListener(certAuthBlockingContactListener);
@@ -76,7 +77,8 @@ public class SingEncryptScenarioTests {
 		certAuthAccount.registerAccount();
 
 		CMPClient timClient = new CMPClient(cmpMessenger, workspaceDir, 
-				"tims", "timsContainerKeyPass".toCharArray(), "timsContainerStorePass".toCharArray());
+				"tims", "timsContainerKeyPass".toCharArray(), "timsContainerStorePass".toCharArray(),
+				"tims@mail.com", "timsUserKeyPass".toCharArray(), "timsUserStorePass".toCharArray());
 		CMPAccount timsAccount = timClient.getCmpAccount();
 		BlockingContactListener timBlockingContactListener = new BlockingContactListener();
 		timsAccount.getUserAccount().addContactListener(timBlockingContactListener);
@@ -86,7 +88,8 @@ public class SingEncryptScenarioTests {
 		timsAccount.registerAccount();
 
 		CMPClient alexClient = new CMPClient(cmpMessenger, workspaceDir, 
-				"alexes", "alexesContainerKeyPass".toCharArray(), "alexesContainerStorePass".toCharArray());
+				"alexes", "alexesContainerKeyPass".toCharArray(), "alexesContainerStorePass".toCharArray(),
+				"alexes@mail.com", "alexesUserKeyPass".toCharArray(), "alexesUserStorePass".toCharArray());
 		CMPAccount alexesAccount = alexClient.getCmpAccount();
 		BlockingContactListener alexesBlockingContactListener = new BlockingContactListener();
 		alexesAccount.getUserAccount().addContactListener(alexesBlockingContactListener);

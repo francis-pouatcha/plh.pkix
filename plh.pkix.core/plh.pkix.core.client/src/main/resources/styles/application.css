@@ -1,0 +1,145 @@
+/*
+
+Document : MistSilverSkin
+Created on : Feb 25, 2013, 3:46:06 AM
+Author : Farrukh Obaid
+Description: MistSilver Skin for JavaFX
+
+*/
+.root{
+     -fx-font: 14px;
+     -fx-base: rgb(227,244,251);
+}
+
+.domainComponentView {
+    
+    -fx-background-size: 100%, 100%;
+    -fx-background-repeat: no-repeat;
+    -fx-border-width: 2px;
+    -fx-padding: 5;
+    -fx-spacing: 5;
+}
+
+.button{
+	-fx-text-fill: maroon ;
+}
+
+
+.domainComponentView-background{
+	-fx-background-image: url("backgroun.jpg");
+}
+
+.cash-btn{
+	-fx-graphic: url("cash2.jpg");
+}
+.cash-gackgroun{
+	-fx-background-image: url("backgroun.jpg");
+}
+
+/*******************************************************************************
+* *
+* Pagination *
+* *
+******************************************************************************/
+.pagination .pagination-control .left-arrow {
+    -fx-background-color: -fx-mark-color;
+    -fx-background-insets: 0;
+    -fx-padding:7 6 0 0;
+    -fx-shape: "m 11.499,17.75 -2.889,0 -3.86,-4.124 3.86,-4.125 2.889,0 -3.375,4.125 3.375,4.124 z";
+    -fx-scale-shape: true;
+}
+.pagination .pagination-control .right-arrow {
+    -fx-background-color: -fx-mark-color;
+    -fx-background-insets: 0;
+    -fx-shape: "m 4.75,9.501 2.889,0 3.86,4.124 -3.86,4.125 -2.889,0 L 8.125,13.625 4.75,9.501 z";
+    -fx-padding:7 6 0 0;
+    -fx-scale-shape: true;
+}
+.pagination .pagination-control .bullet-button {
+    -fx-background-insets: 4,5,6;
+    -fx-background-radius: 4em, 4em, 4em;
+    -fx-padding: 0.333em;
+}
+.pagination .pagination-control .left-arrow-button{
+    -fx-padding: 1;
+}
+.pagination .pagination-control .right-arrow-button {
+    -fx-padding: 1;
+}
+.pagination .pagination-control .number-button {        
+    -fx-padding: 1 2 1 2;
+}
+.pagination .pagination-control .bullet-button:hover {
+}
+.pagination .pagination-control .bullet-button:pressed {
+    -fx-background-insets: 4,5,6,7;
+}
+.pagination .pagination-control .bullet-button:selected {
+    -fx-background-insets: 4,5,6;
+}
+.pagination.bullet .pagination-control .left-arrow-button, .pagination.bullet .pagination-control .right-arrow-button {
+    -fx-background-radius: 4em;
+}
+.pagination .pagination-control .number-button {
+    -fx-background-insets: 0,1,2;
+}
+.pagination .pagination-control .number-button:hover {
+    -fx-background-insets: 0,1,2;
+}
+.pagination .pagination-control .number-button:pressed {
+    -fx-background-insets: 0,1,2,3;
+}
+.pagination .pagination-control .number-button:selected {
+    -fx-background-insets: 0,1,2;
+}
+.pagination .pagination-control .page-information {
+    -fx-text-fill: black;
+}
+/*******************************************************************************
+* *
+* TitledPane *
+* *
+******************************************************************************/
+
+ .accordion .titled-pane > .title > .arrow-button {
+    -fx-background-color: transparent,rgb(76,81,86), linear-gradient(to bottom,rgb(200,202,207) 0%,rgb(180,182,187) 100%), linear-gradient(to bottom,rgb(222,223,228) 0%,rgb(195,199,203) 100%);
+    -fx-background-insets: 0,4,5,6;
+    -fx-background-radius: 4em;
+    -fx-padding: 14;
+}
+
+.titled-pane > .title > .arrow-button .arrow {
+    -fx-background-color: -fx-mark-color;
+    -fx-background-insets: 0;
+    -fx-shape: "m 12.249,10.251 0,2.889 L 8.125,17 4,13.14 l 0,-2.889 4.125,3.375 4.124,-3.375 z";
+    -fx-padding: 6 7 0 0;
+}
+
+#amountPane > .text-field{
+	
+	-fx-text-fill: rgb(59,48,255);
+}
+
+.text-field > #processAmont{
+	
+	-fx-text-fill: red ;
+}
+
+#deliveryItemBar > .text-field{
+	
+	-fx-text-fill: rgb(59,48,255);
+}
+
+.colored-text > .text-field{
+	
+	-fx-text-fill: rgb(59,48,255);
+}
+
+.separator{
+	-fx-background-color: rgb(78,166,172);
+}
+
+
+
+
+

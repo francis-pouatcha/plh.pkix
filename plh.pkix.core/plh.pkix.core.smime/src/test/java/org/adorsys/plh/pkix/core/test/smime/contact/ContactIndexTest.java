@@ -8,14 +8,18 @@ import java.security.cert.CertificateException;
 import java.util.List;
 import java.util.Properties;
 
+import javax.security.auth.callback.CallbackHandler;
+
+import org.adorsys.plh.pkix.core.smime.plooh.ContainerNameUtils;
+import org.adorsys.plh.pkix.core.smime.plooh.FileContainerCallbackHandler;
 import org.adorsys.plh.pkix.core.smime.plooh.SelectedFileNotADirectoryException;
-import org.adorsys.plh.pkix.core.smime.plooh.SimpleKeyStorePasswordsCallbackHandler;
 import org.adorsys.plh.pkix.core.smime.plooh.UserAccount;
 import org.adorsys.plh.pkix.core.smime.plooh.UserDevice;
 import org.adorsys.plh.pkix.core.utils.KeyStoreAlias;
 import org.adorsys.plh.pkix.core.utils.V3CertificateUtils;
 import org.adorsys.plh.pkix.core.utils.contact.ContactManager;
 import org.adorsys.plh.pkix.core.utils.exception.PlhCheckedException;
+import org.adorsys.plh.pkix.core.utils.store.SimpleKeyStoreCallbackHandler;
 import org.apache.commons.io.FileUtils;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.junit.AfterClass;
@@ -34,14 +38,21 @@ public class ContactIndexTest {
 	@Test
 	public void test() throws CertificateException, KeyStoreException, PlhCheckedException, SelectedFileNotADirectoryException {
 		
+		String emailSuffix = "@mail.com";
 		// francis
-		UserAccount francisUserAccount = newUserAccount("francis");
+		String francisName = "francis";
+		FileContainerCallbackHandler francisFileContainerCallbackHandler = newFileContainerCallbackHandler(francisName, francisName+emailSuffix);
+		UserAccount francisUserAccount = newUserAccount(francisName, francisFileContainerCallbackHandler);
 		
 		// nadege
-		UserAccount nadegeUserAccount = newUserAccount("nadege");
+		String nadegeName = "nadege";
+		FileContainerCallbackHandler nadegeFileContainerCallbackHandler = newFileContainerCallbackHandler(nadegeName, nadegeName+emailSuffix);
+		UserAccount nadegeUserAccount = newUserAccount(nadegeName, nadegeFileContainerCallbackHandler);
 
 		// sandro
-		UserAccount sandroUserAccount = newUserAccount("sandro");
+		String sandroName = "sandro";
+		FileContainerCallbackHandler sandroFileContainerCallbackHandler = newFileContainerCallbackHandler(sandroName, sandroName+emailSuffix);
+		UserAccount sandroUserAccount = newUserAccount(sandroName, sandroFileContainerCallbackHandler);
 
 		PrivateKeyEntry nadegePrivateKeyEntry = nadegeUserAccount.getAnyMessagePrivateKeyEntry();
 		PrivateKeyEntry sandroPrivateKeyEntry = sandroUserAccount.getAnyMessagePrivateKeyEntry();
@@ -49,7 +60,7 @@ public class ContactIndexTest {
 		francisUserAccount.getTrustedContactManager().addCertEntry(V3CertificateUtils.getX509CertificateHolder(nadegePrivateKeyEntry.getCertificate()));
 		francisUserAccount.getTrustedContactManager().addCertEntry(V3CertificateUtils.getX509CertificateHolder(sandroPrivateKeyEntry.getCertificate()));
 
-		francisUserAccount = loadUserAccount("francis");
+		francisUserAccount = loadUserAccount(francisName, francisFileContainerCallbackHandler);
 
 		ContactManager francisTrustedContactManager = francisUserAccount.getTrustedContactManager();
 		List<KeyStoreAlias> keyStoreAliases = francisTrustedContactManager.keyStoreAliases();
@@ -57,29 +68,36 @@ public class ContactIndexTest {
 		Assert.assertNotNull(francisContacts);
 	}
 	
-	private static UserAccount newUserAccount(String name) throws SelectedFileNotADirectoryException{
+	private static UserAccount newUserAccount(String name, CallbackHandler callbackHandler) throws SelectedFileNotADirectoryException{
 		UserDevice device = loadUserDevice(name);
-		return device.createUserAccount(new File(testDir, "accountDirs/"+name+"Account"));
-		
+		return device.createUserAccount(new File(testDir, "accountDirs/"+name+"Account"), callbackHandler);
 	}
 	
-	private static UserAccount loadUserAccount(String name) throws SelectedFileNotADirectoryException{
+	private static UserAccount loadUserAccount(String name, CallbackHandler callbackHandler) throws SelectedFileNotADirectoryException{
 		UserDevice device = loadUserDevice(name);
 		List<X509CertificateHolder> accounts = device.getAccounts();
 		X509CertificateHolder accountCertificateHolder = accounts.iterator().next();
-		return device.loadUserAccount(accountCertificateHolder);
+		return device.loadUserAccount(accountCertificateHolder, callbackHandler);
 		
 	}
 	
 	private static UserDevice loadUserDevice(String name) throws SelectedFileNotADirectoryException{
+		SimpleKeyStoreCallbackHandler deviceCallBackHandler = new SimpleKeyStoreCallbackHandler(
+				(name +"Device Key Pass").toCharArray(), 
+				(name+"Device Store Pass").toCharArray());
 		// nadege
 		Properties properties = new Properties();
-		properties.put(UserDevice.SYSTEM_PROPERTY_KEY_USER_HOME, new File(testDir, name+"Device").getPath());
-		properties.put(UserDevice.SYSTEM_PROPERTY_KEY_USER_NAME, name);
-		SimpleKeyStorePasswordsCallbackHandler deviceCallBackHandler = new SimpleKeyStorePasswordsCallbackHandler(
-				(name +"Container Key Pass").toCharArray(), 
-				(name+"Container Store Pass").toCharArray());
+		properties.put(UserDevice.PROPERTY_KEY_USER_HOME, new File(testDir, name+"Device").getPath());
+//		properties.put(UserDevice.PROPERTY_KEY_USER_NAME, name);
+		
 		return new UserDevice(deviceCallBackHandler, properties);
 	}
 	
+	private FileContainerCallbackHandler newFileContainerCallbackHandler(String name, String email){
+		SimpleKeyStoreCallbackHandler keystoreCallbackHandler = new SimpleKeyStoreCallbackHandler(
+				(name +"Container Key Pass").toCharArray(), 
+				(name+"Container Store Pass").toCharArray());
+		return new FileContainerCallbackHandler(email, ContainerNameUtils.getContainerName(name), keystoreCallbackHandler);
+		
+	}
 }

@@ -1,26 +1,32 @@
 package org.adorsys.plh.pkix.core.smime.plooh;
 
 import java.io.File;
-import java.net.InetAddress;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.UnknownHostException;
 import java.security.KeyStore.TrustedCertificateEntry;
 import java.security.cert.Certificate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
+import javax.security.auth.callback.CallbackHandler;
+
+import org.adorsys.plh.pkix.core.smime.ports.CommunicationPort;
+import org.adorsys.plh.pkix.core.smime.ports.StoragePort;
 import org.adorsys.plh.pkix.core.utils.KeyStoreAlias;
 import org.adorsys.plh.pkix.core.utils.V3CertificateUtils;
 import org.adorsys.plh.pkix.core.utils.X500NameHelper;
 import org.adorsys.plh.pkix.core.utils.action.ActionContext;
 import org.adorsys.plh.pkix.core.utils.contact.ContactManager;
 import org.adorsys.plh.pkix.core.utils.exception.PlhCheckedException;
+import org.adorsys.plh.pkix.core.utils.store.DelegatingKeyStoreCallbackHandler;
 import org.adorsys.plh.pkix.core.utils.store.FileWrapper;
 import org.adorsys.plh.pkix.core.utils.store.FilesContainer;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x500.style.BCStyle;
 import org.bouncycastle.cert.X509CertificateHolder;
@@ -52,14 +58,17 @@ import org.bouncycastle.cert.X509CertificateHolder;
 public final class UserDevice {
 
 	public static final String PLOOH_DEFAULT_USER_HOME_DIR_NAME = ".plooh";
-	public static final String SYSTEM_PROPERTY_KEY_USER_HOME = "user.home";
-	public static final String SYSTEM_PROPERTY_KEY_USER_NAME = "user.name";
-	public static final String SYSTEM_PROPERTY_KEY_PLOOH_USER_HOME_DIR = "plooh.user.home.dir";
-
+	public static final String PROPERTY_KEY_USER_HOME = "user.home";
+	public static final String PROPERTY_KEY_PLOOH_USER_HOME_DIR = "plooh.user.home.dir";
+//	public static final String PROPERTY_KEY_USER_NAME="user.name";
 	public static final String ACCOUNTS_FILE_NAME="accounts";	
 	
 	private final FilesContainer userDeviceContainer;
 	private final List<X509CertificateHolder> accounts;
+	
+	private CommunicationPort communicationPort;
+	
+	private StoragePort storagePort;
 	
 	/**
 	 * Instantiates the plooh application on a computer's user account.
@@ -67,7 +76,7 @@ public final class UserDevice {
 	 * @param containerKeyPass
 	 * @param containerStorePass
 	 */
-	public UserDevice(KeyStorePasswordsCallbackHandler callbackHandler, Properties properties) {
+	public UserDevice(CallbackHandler callbackHandler, Properties properties) {
 		
 		File ploohUserHomeDirDiscovered = discoverPloohUserHomeDirectory(properties);
 		
@@ -75,26 +84,16 @@ public final class UserDevice {
 			userDeviceContainer = FileContainerFactory.loadFilesContainer(ploohUserHomeDirDiscovered, null, callbackHandler);
 			
 		} else {
-			String userName = properties.getProperty(SYSTEM_PROPERTY_KEY_USER_NAME); 		
-			InetAddress localMachine;
-			try {
-				localMachine = InetAddress.getLocalHost();
-			} catch (UnknownHostException e) {
-				throw new IllegalStateException(e);
-			}
-			
-			String fileContainerName = userName+"@"+localMachine;
-			userDeviceContainer = FileContainerFactory.createFilesContainer(
-					fileContainerName, ContainerType.D,
+			userDeviceContainer = FileContainerFactory.createFilesContainer(ContainerType.D,
 					ploohUserHomeDirDiscovered, null, callbackHandler);
 		}
 		accounts = load();// load registered accounts
 	}
 	
 	private File discoverPloohUserHomeDirectory(Properties properties){
-		String ploohUserHomeDirPath = properties.getProperty(SYSTEM_PROPERTY_KEY_PLOOH_USER_HOME_DIR);
+		String ploohUserHomeDirPath = properties.getProperty(PROPERTY_KEY_PLOOH_USER_HOME_DIR);
 		if(ploohUserHomeDirPath==null){
-			String userHomeDirPath = properties.getProperty(SYSTEM_PROPERTY_KEY_USER_HOME);
+			String userHomeDirPath = properties.getProperty(PROPERTY_KEY_USER_HOME);
 			File userHomeDir = new File(userHomeDirPath);
 			return new File(userHomeDir, PLOOH_DEFAULT_USER_HOME_DIR_NAME);
 		} else {
@@ -110,20 +109,17 @@ public final class UserDevice {
 	 * @throws SelectedFileNotADirectoryException 
 	 * @throws SelectedDirNotEmptyException 
 	 */
-	public UserAccount createUserAccount(File accountDir) throws SelectedFileNotADirectoryException{
+	public UserAccount createUserAccount(File accountDir, CallbackHandler callbackHandler) throws SelectedFileNotADirectoryException{
 		
-		// Generate a password
 		FileWrapper accountDirWrapper = userDeviceContainer.newAbsoluteFile(accountDir.getAbsolutePath());
-		char[] keyPass = userDeviceContainer.getPublicKeyIdentifier().toCharArray();
-		char[] storePass = userDeviceContainer.getPublicKeyIdentifier().toCharArray();
-		KeyStorePasswordsCallbackHandler callbackHandler = new SimpleKeyStorePasswordsCallbackHandler(keyPass, storePass);
+		CallbackHandler delegatingCallbackHandler = newDelegatingCallbackHandler(accountDirWrapper, callbackHandler);
 		
 		UserAccount userAccount = null;
 		if(accountDir.exists()){
-			userAccount = new UserAccount(new ActionContext(), accountDir, accountDirWrapper, callbackHandler);
+			userAccount = new UserAccount(new ActionContext(), accountDir, accountDirWrapper, delegatingCallbackHandler);
 		} else {
 			X509CertificateHolder deviceCertificateHolder = userDeviceContainer.getX509CertificateHolder();
-			userAccount = new UserAccount(new ActionContext(), accountDir, accountDirWrapper, callbackHandler, deviceCertificateHolder);
+			userAccount = new UserAccount(new ActionContext(), accountDir, accountDirWrapper, delegatingCallbackHandler, deviceCertificateHolder);
 			X509CertificateHolder accountCertificateHolder = userAccount.getAccountCertificateHolder();
 			try {
 				userDeviceContainer.getTrustedContactManager().addCertEntry(accountCertificateHolder);
@@ -159,7 +155,7 @@ public final class UserDevice {
 		return accounts;
 	}
 
-	public UserAccount loadUserAccount(X509CertificateHolder accountCertificateHolder) throws SelectedFileNotADirectoryException{
+	public UserAccount loadUserAccount(X509CertificateHolder accountCertificateHolder, CallbackHandler callbackHandler) throws SelectedFileNotADirectoryException{
 		List<String> uris = X500NameHelper.readSubjectURIsFromAltName(accountCertificateHolder);
 		String accountDirURI =null;
 		for (String string : uris) {
@@ -179,6 +175,52 @@ public final class UserDevice {
 		}
 		if(!accountDir.exists())
 			throw new IllegalStateException("Missing account directory");
-		return createUserAccount(accountDir);
+		return createUserAccount(accountDir,callbackHandler);
+	}
+
+	public CommunicationPort getCommunicationPort() {
+		return communicationPort;
+	}
+
+	public void setCommunicationPort(CommunicationPort communicationPort) {
+		this.communicationPort = communicationPort;
+	}
+
+	public StoragePort getStoragePort() {
+		return storagePort;
+	}
+
+	public void setStoragePort(StoragePort storagePort) {
+		this.storagePort = storagePort;
+	}
+	
+	private CallbackHandler newDelegatingCallbackHandler(FileWrapper accountDirWrapper, CallbackHandler callbackHandler){
+		// Generate a password
+		FileWrapper keyPassFileWrapper = accountDirWrapper.newChild("keyPass");
+		FileWrapper storePassFileWrapper = accountDirWrapper.newChild("storePass");
+		
+		char[] keyPass = null;
+		char[] storePass = null;
+		if(keyPassFileWrapper.exists()){
+			InputStream inputStream = keyPassFileWrapper.newInputStream();
+			try {
+				keyPass = IOUtils.toCharArray(inputStream);
+				inputStream.close();
+			} catch (IOException e) {
+				throw new IllegalStateException(e);
+			}
+		}
+
+		if(storePassFileWrapper.exists()){
+			InputStream inputStream = storePassFileWrapper.newInputStream();
+			try {
+				storePass = IOUtils.toCharArray(inputStream);
+				inputStream.close();
+			} catch (IOException e) {
+				throw new IllegalStateException(e);
+			}
+		}
+
+		return new DelegatingKeyStoreCallbackHandler(keyPass, storePass, callbackHandler);
 	}
 }
